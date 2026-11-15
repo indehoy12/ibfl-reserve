@@ -7,6 +7,7 @@ import { state, startStore, onChange, isReady } from "./store.js";
 import { parseFile, buildPlan, buildOps, LIMITS } from "./importer.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { buildXlsx } from "./exporter.js";
+import { LOGOS, logoOf, bundledUrl } from "./logos.js";
 import {
   STAGES, esc, timeStr, dayShort, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
   planKnockout, computeBracket, unresolvedTies, finalScore, scoreFromEvents, matchReadiness, lineupIds, FUTSAL_STARTERS, nowMs, syncServerTime, ballSvg,
@@ -75,9 +76,10 @@ function initials(team) {
   return w.length > 1 ? (w[0][0] + w[1][0]).toUpperCase() : w[0].slice(0, 3).toUpperCase();
 }
 function badge(team, size = "") {
-  const cls = size ? `tbadge ${size}` : "tbadge";
-  if (team?.logoUrl && !team.logoUrl.startsWith("/assets/logos/")) return `<span class="${cls}"><img src="${esc(team.logoUrl)}" alt="" loading="lazy"></span>`;
-  return `<span class="${cls}" style="background:${esc(colorFor(team))}">${esc(initials(team))}</span>`;
+  const base = size ? `tbadge ${size}` : "tbadge";
+  const lg = logoOf(team);
+  if (lg) return `<span class="${base}${lg.wide ? " wide" : ""}"${lg.wide ? ` style="--r:${lg.ratio}"` : ""}><img src="${esc(lg.url)}" alt="" loading="lazy"></span>`;
+  return `<span class="${base}" style="background:${esc(colorFor(team))}">${esc(initials(team))}</span>`;
 }
 const matchRef = (id) => doc(db, "matches", id);
 
@@ -309,7 +311,7 @@ function addMatchCard() {
     ? `<form data-form="import-matches">
       <p class="hint">Satu laga per baris, dipisah tanda <b>|</b>:<br><code>tanggal jam | grup atau fase | matchday | tim A | tim B</code><br>
       Contoh:<br><code>2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2</code><br><code>2026-12-04 19:30 | final | 1 | | </code><br>
-      Fase: huruf grup (A, B, …) atau <b>qf</b>, <b>sf</b>, <b>third</b>, <b>final</b>. Nama tim harus sama dengan yang sudah dibuat; untuk fase gugur tim boleh dikosongkan dulu.<br>Bila jam belum ditentukan, tulis <b>TBD</b> di kolom tanggal: <code>TBD | final | 5 | | </code>.</p>
+      Fase: huruf grup (A, B, …) atau <b>qf</b>, <b>sf</b>, <b>final</b>. Nama tim harus sama dengan yang sudah dibuat; untuk fase gugur tim boleh dikosongkan dulu.<br>Bila jam belum ditentukan, tulis <b>TBD</b> di kolom tanggal: <code>TBD | final | 5 | | </code>.</p>
       <textarea name="text" placeholder="2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2"></textarea>
       <div class="form-actions"><button class="btn orange" type="submit">Impor jadwal</button></div></form>`
     : (state.teams.length ? matchForm(null) : `<p class="hint">Buat tim dulu lewat menu <a class="lnk" href="#team-add">Tambah tim</a>.</p>`);
@@ -785,7 +787,7 @@ function champPanel() {
   const c = championInfo(state.matches);
   if (!c) return "";
   const row = (l, id) => (id ? `<div class="podr"><small>${l}</small><a class="lnk" href="#team/${esc(id)}">${esc(tName(id))}</a></div>` : "");
-  return `<div class="panel okbox"><h2 class="a">Turnamen selesai</h2><div class="podium2">${row("Juara", c.champion)}${row("Runner-up", c.runnerUp)}${row("Juara 3", c.third)}${row("Peringkat 4", c.fourth)}</div>
+  return `<div class="panel okbox"><h2 class="a">Turnamen selesai</h2><div class="podium2">${row("Juara", c.champion)}${row("Runner-up", c.runnerUp)}</div>
     <p class="hint">Halaman juara dan arsip hasil sudah tampil di website (menu Info → Juara &amp; arsip).</p></div>`;
 }
 
@@ -804,8 +806,13 @@ function teamView(id) {
         <div style="grid-column:1 / -1"><button class="btn orange" type="submit">Simpan info tim</button></div></form></div>
     <div class="panel"><h2 class="a">Logo tim</h2>
       <div class="logo-edit">${badge(t, "lg")}
-        <div><input type="file" accept="image/*" data-logo="${esc(t.id)}">${t.logoUrl ? `<button class="btn sm danger mini" style="margin-top:8px" data-act="del-logo" data-id="${esc(t.id)}">Hapus logo</button>` : ""}</div></div>
-      <p class="hint">Pilih gambar logo (PNG/JPG/SVG). Disarankan persegi 512 x 512 px, PNG latar transparan. Otomatis dikecilkan ke maks. 256 px dan langsung tampil di website.</p>
+        <div><b>${logoOf(t) ? esc(LOGOS.find((l) => l.id === logoOf(t).id)?.name || "Logo unggahan") : "Belum ada logo"}</b>
+          <p class="hint" style="margin:4px 0 0">Logo bawaan dikenali otomatis dari nama tim. Pilih logo lain di bawah bila perlu.</p></div></div>
+      <div class="logo-pick">${LOGOS.map((l) => `<button type="button" class="logo-opt${logoOf(t)?.id === l.id ? " on" : ""}" data-act="pick-logo" data-id="${esc(t.id)}" data-logo="${l.id}" title="${esc(l.name)}"><span><img src="${esc(bundledUrl(l.id))}" alt=""></span><small>${esc(l.name)}</small></button>`).join("")}</div>
+      <details class="logo-more"><summary>Atau unggah logo sendiri</summary>
+        <div style="margin-top:10px"><input type="file" accept="image/*" data-logo="${esc(t.id)}"></div>
+        <p class="hint">PNG latar transparan atau SVG, minimal 256 px. Ruang kosong di sekitar logo dipangkas otomatis, jadi logo lurus tidak perlu dibuat persegi.</p></details>
+      ${logoOf(t) ? `<button class="btn sm danger mini" style="margin-top:12px" data-act="del-logo" data-id="${esc(t.id)}">Hapus logo (pakai singkatan)</button>` : ""}
     </div>
     <div class="panel"><h2 class="a">Pemain <span class="cntb">${roster.length}/${LIMITS.players}</span></h2>
       ${roster.map(playerRow).join("") || `<p class="hint">Belum ada pemain.</p>`}
@@ -965,7 +972,7 @@ function render() {
   setBar(topBar());
   if (isReady()) {
     const b = computeBracket(state.teams, state.matches, state.events);
-    slotByMatch = new Map([...b.qf, ...b.sf, b.final, ...(b.third ? [b.third] : [])].filter((x) => x.match).map((x) => [x.match.id, x]));
+    slotByMatch = new Map([...b.qf, ...b.sf, b.final].filter((x) => x.match).map((x) => [x.match.id, x]));
   }
   const r = route();
   if (!isReady()) {
@@ -1426,9 +1433,12 @@ const actions = {
     toast(`Impor selesai: ${st.plan.totals.teams} tim, ${st.plan.totals.players + st.plan.totals.officials} orang`);
     location.hash = "#teams";
   },
+  async "pick-logo"(id, b) {
+    await updateDoc(doc(db, "teams", id), { logoId: b.dataset.logo, logoUrl: null, logoWide: false, logoRatio: null });
+  },
   async "del-logo"(id) {
     if (!(await confirmBox("Tim ini akan kembali memakai lingkaran berisi singkatan nama.", { title: "Hapus logo tim?", ok: "Ya, hapus logo", danger: true }))) return;
-    await updateDoc(doc(db, "teams", id), { logoUrl: null });
+    await updateDoc(doc(db, "teams", id), { logoUrl: null, logoWide: false, logoRatio: null, logoId: "none" });
   },
   async "del-player"(id) {
     const p = state.playerById[id];
@@ -1508,7 +1518,7 @@ const forms = {
     const lines = String(new FormData(f).get("text")).split("\n").map((l) => l.trim()).filter(Boolean);
     if (!lines.length) throw new Error("Tempel jadwal dulu.");
     const byName = Object.fromEntries(state.teams.map((t) => [t.name.trim().toLowerCase(), t]));
-    const stageMap = { qf: "qf", perempat: "qf", sf: "sf", semi: "sf", final: "final", third: "third", "3": "third", juara3: "third" };
+    const stageMap = { qf: "qf", perempat: "qf", sf: "sf", semi: "sf", final: "final" };
     const docs = [], problems = [], slotCount = { qf: 0, sf: 0 };
     lines.forEach((line, i) => {
       const p = line.split(/\s*[|\t;]\s*/);
@@ -1701,23 +1711,46 @@ document.addEventListener("change", async (e) => {
     toast(errMsg(err), true);
   }
 });
-// Logo tim: dikecilkan di browser lalu disimpan langsung di dokumen tim (tanpa Firebase Storage)
+// Logo tim: dipangkas rapat ke isinya, diratakan ke tengah, lalu dikecilkan di browser dan disimpan langsung di dokumen tim (tanpa Firebase Storage)
+// Hasil: { url, wide }. wide = true untuk logo lurus (lebih lebar dari 1,6 : 1), supaya tampil di kotak lebar dan tidak mengecil.
 function fileToLogo(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const max = 256;
-      const w0 = img.naturalWidth || max, h0 = img.naturalHeight || max;
-      const s = Math.min(1, max / Math.max(w0, h0));
+      const w0 = img.naturalWidth || 256, h0 = img.naturalHeight || 256;
+      // 1) cari batas isi logo (abaikan piksel transparan dan latar putih polos)
+      let x0 = 0, y0 = 0, x1 = w0 - 1, y1 = h0 - 1;
+      try {
+        const wk = document.createElement("canvas");
+        wk.width = w0; wk.height = h0;
+        const wx = wk.getContext("2d", { willReadFrequently: true });
+        wx.drawImage(img, 0, 0);
+        const d = wx.getImageData(0, 0, w0, h0).data;
+        let a0 = w0, b0 = h0, a1 = -1, b1 = -1;
+        for (let y = 0; y < h0; y++) for (let x = 0; x < w0; x++) {
+          const i = (y * w0 + x) * 4;
+          const solidWhite = d[i] > 245 && d[i + 1] > 245 && d[i + 2] > 245;
+          if (d[i + 3] > 16 && !solidWhite) { if (x < a0) a0 = x; if (x > a1) a1 = x; if (y < b0) b0 = y; if (y > b1) b1 = y; }
+        }
+        if (a1 > a0 && b1 > b0) { x0 = a0; y0 = b0; x1 = a1; y1 = b1; }
+      } catch { /* gambar dari sumber lain: pakai seluruh gambar */ }
+      const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+      // 2) kanvas hasil: logo lurus tetap lebar (maks. 3 : 1), selain itu persegi
+      const ratio = cw / ch, wide = ratio > 1.6;
+      const outW = 256, outH = wide ? Math.round(outW / Math.min(ratio, 3)) : 256, pad = 8;
+      const s = Math.min((outW - pad * 2) / cw, (outH - pad * 2) / ch);
+      const dw = Math.round(cw * s), dh = Math.round(ch * s);
       const c = document.createElement("canvas");
-      c.width = Math.max(1, Math.round(w0 * s)); c.height = Math.max(1, Math.round(h0 * s));
-      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.width = outW; c.height = outH;
+      const cx = c.getContext("2d");
+      cx.imageSmoothingQuality = "high";
+      cx.drawImage(img, x0, y0, cw, ch, Math.round((outW - dw) / 2), Math.round((outH - dh) / 2), dw, dh);
       URL.revokeObjectURL(url);
       let out = c.toDataURL("image/webp", 0.9);
       if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
       if (out.length > 180000) return reject(new Error("Logo terlalu besar/rumit. Coba gambar yang lebih sederhana."));
-      resolve(out);
+      resolve({ url: out, wide, ratio: wide ? Math.round(Math.min(ratio, 3) * 100) / 100 : 1, lowRes: Math.max(cw, ch) < 100 });
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("File bukan gambar yang valid.")); };
     img.src = url;
@@ -1728,7 +1761,7 @@ document.addEventListener("change", (e) => {
   const inp = e.target.closest("input[data-logo]");
   if (inp && inp.files[0]) {
     const id = inp.dataset.logo, file = inp.files[0];
-    act(async () => { await updateDoc(doc(db, "teams", id), { logoUrl: await fileToLogo(file) }); }, "Logo tersimpan").finally(render);
+    act(async () => { const lg = await fileToLogo(file); await updateDoc(doc(db, "teams", id), { logoUrl: lg.url, logoWide: lg.wide, logoRatio: lg.ratio, logoId: "upload" }); if (lg.lowRes) toast("Logo tersimpan, tapi resolusinya kecil dan mungkin tampak buram. Minta file yang lebih besar ke tim.", true); }, "Logo tersimpan").finally(render);
     return;
   }
 });

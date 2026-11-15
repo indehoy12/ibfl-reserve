@@ -8,6 +8,7 @@ import {
   skeleton, shootout, penScoreText, penDots, rtClockHtml, tickRtClocks,
 } from "./util.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
+import { logoOf } from "./logos.js";
 
 const $app = document.getElementById("app");
 const $nav = document.getElementById("nav");
@@ -30,9 +31,10 @@ function initials(team) {
   return w.length > 1 ? (w[0][0] + w[1][0]).toUpperCase() : w[0].slice(0, 3).toUpperCase();
 }
 function badge(team, sm = false, size = "") {
-  const cls = sm ? "tbadge sm" : size ? `tbadge ${size}` : "tbadge";
-  if (team?.logoUrl && !team.logoUrl.startsWith("/assets/logos/")) return `<span class="${cls}"><img src="${esc(team.logoUrl)}" alt="" loading="lazy"></span>`;
-  return `<span class="${cls}" style="background:${colorFor(team)}">${esc(initials(team))}</span>`;
+  const base = sm ? "tbadge sm" : size ? `tbadge ${size}` : "tbadge";
+  const lg = logoOf(team);
+  if (lg) return `<span class="${base}${lg.wide ? " wide" : ""}"${lg.wide ? ` style="--r:${lg.ratio}"` : ""}><img src="${esc(lg.url)}" alt="" loading="lazy"></span>`;
+  return `<span class="${base}" style="background:${colorFor(team)}">${esc(initials(team))}</span>`;
 }
 const tName = (id) => state.teamById[id]?.name ?? "Belum ditentukan";
 // Nama sisi laga; untuk babak gugur yang timnya belum pasti tampil "Juara A", "Pemenang QF1", dst.
@@ -115,7 +117,7 @@ function standingsTable(rows, qualify, done = false) {
   </tr></thead><tbody>${rows
     .map(
       (r, i) => `<tr class="${i < qualify && r.p > 0 ? "q" : done && i >= qualify ? "out" : ""}">
-      <td class="rank">${i + 1}</td><td class="tm">${state.teamById[r.teamId]?.logoUrl && !state.teamById[r.teamId].logoUrl.startsWith("/assets/logos/") ? `<span class="tmrow">${badge(state.teamById[r.teamId], true)}${esc(r.name)}${tieMark(r)}</span>` : esc(r.name) + tieMark(r)}</td><td>${r.p}</td>
+      <td class="rank">${i + 1}</td><td class="tm">${logoOf(state.teamById[r.teamId]) ? `<span class="tmrow">${badge(state.teamById[r.teamId], true)}${esc(r.name)}${tieMark(r)}</span>` : esc(r.name) + tieMark(r)}</td><td>${r.p}</td>
       <td class="opt">${r.w}</td><td class="opt">${r.d}</td><td class="opt">${r.l}</td>
       <td>${r.gf}</td><td class="opt">${r.ga}</td><td>${r.gf - r.ga > 0 ? "+" : ""}${r.gf - r.ga}</td><td class="pts">${r.pts}</td></tr>`
     )
@@ -340,7 +342,7 @@ function baganView() {
   <div class="bracket" role="group" aria-label="Bagan perempat final, semifinal, dan final">
     <section class="round r-qf" aria-label="Perempat final"><h3>Perempat final</h3><div class="rc">${b.qf.map((s) => bracketCard(s)).join("")}</div></section>
     <section class="round r-sf" aria-label="Semifinal"><h3>Semifinal</h3><div class="rc">${b.sf.map((s) => bracketCard(s)).join("")}</div></section>
-    <section class="round r-fn" aria-label="Final"><h3>Final</h3><div class="rc">${bracketCard(b.final, "final")}${b.third ? `<h3 class="third">Juara 3</h3>${bracketCard(b.third)}` : ""}</div></section>
+    <section class="round r-fn" aria-label="Final"><h3>Final</h3><div class="rc">${bracketCard(b.final, "final")}</div></section>
   </div>
   <p class="note">Juara dan runner-up grup terisi otomatis setelah semua laga grupnya selesai. Laga seri di babak gugur ditentukan lewat adu penalti.</p>${footer}`;
 }
@@ -451,11 +453,11 @@ function juaraView() {
   const hero = info
     ? `<div class="champ"><small>Juara</small>${badge(state.teamById[info.champion], false, "lg")}<h2>${esc(tName(info.champion))}</h2>
         <p>Final: ${esc(sideName(info.fin, "A"))} ${info.fin.scoreA ?? 0} – ${info.fin.scoreB ?? 0} ${esc(sideName(info.fin, "B"))}${penNote(info.fin)}</p><a class="tprofile" href="#/laga/${esc(info.fin.id)}">Lihat laga final →</a></div>
-       <div class="podium">${place("Runner-up", info.runnerUp)}${place("Juara 3", info.third)}${place("Peringkat 4", info.fourth)}</div>`
+       <div class="podium">${place("Runner-up", info.runnerUp)}</div>`
     : `<div class="champ idle"><h2>Turnamen belum selesai</h2><p>Halaman ini menampilkan juara setelah final selesai. Sementara itu, arsip hasil di bawah terus bertambah.</p></div>`;
   const awards = `<div class="awards">${top("goals", "Top scorer")}${top("assists", "Top assist")}<div class="aw"><small>Kiper terbaik</small><b>${gk ? `<a class="plink" href="#/pemain/${esc(gk.id)}">${esc(gk.name)}</a>` : "–"}</b><span>${gk ? esc(tName(gk.teamId)) : "Dipilih panitia"}</span></div></div>`;
   const nums = `<div class="sgrid">${sbox(done.length, "Laga")}${sbox(goals, "Gol")}${sbox(done.length ? (goals / done.length).toFixed(1) : "0", "Gol per laga")}${sbox(cards("yellow"), "Kuning")}${sbox(cards("red"), "Merah")}</div>`;
-  const order = ["final", "third", "sf", "qf"];
+  const order = ["final", "sf", "qf"];
   const arch = order.map((st) => ({ st, l: done.filter((m) => m.stage === st).sort((a, b) => sortByKickoff(b, a)) })).filter((x) => x.l.length)
     .map((x) => `<div class="daygroup">${STAGES[x.st]}</div><div class="sheet">${x.l.map(resultRow).join("")}</div>`).join("");
   const groups = groupsOf(std).map((g) => {
@@ -801,7 +803,7 @@ function render() {
   if (r.name === "tv") tvWarm();
   if (isReady()) {
     const b = computeBracket(state.teams, state.matches, state.events);
-    slotByMatch = new Map([...b.qf, ...b.sf, b.final, ...(b.third ? [b.third] : [])].filter((x) => x.match).map((x) => [x.match.id, x]));
+    slotByMatch = new Map([...b.qf, ...b.sf, b.final].filter((x) => x.match).map((x) => [x.match.id, x]));
   }
 
   if (isReady()) tvCheckGoals(r.name === "tv");

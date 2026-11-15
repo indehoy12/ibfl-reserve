@@ -1261,9 +1261,6 @@ details.team .roster {
   color: var(--ink-2);
   margin: 18px 0 8px;
 }
-.round h3.third {
-  margin-top: 22px;
-}
 .rc {
   display: grid;
   gap: 10px;
@@ -4985,4 +4982,132 @@ table.std tr.out td.rank::before {
 } /* tinggi tetap supaya skor tidak bergeser saat isi berganti */
 .tv-feed.brk .tv-goals {
   height: 100%;
+}
+
+/* ---------- Logo: kotak lebar untuk logo lurus + alas putih di latar gelap ---------- */
+/* Logo lurus (logoWide): tinggi badge tetap, lebar 2x tinggi, tanpa pembesaran */
+.tbadge.wide {
+  aspect-ratio: var(--r, 2);
+}
+.tbadge.wide,
+.tv-team .tbadge.lg.wide,
+.tv-next .tv-team .tbadge.lg.wide {
+  width: auto;
+  max-width: 100%;
+  border-radius: 0;
+}
+.tbadge.wide > img,
+.tbadge.sm.wide > img {
+  transform: none;
+}
+/* Latar gelap (beranda, detail laga, TV, juara): logo tetap transparan tanpa kotak. Garis tepi putih tipis mengikuti bentuk logo supaya logo gelap/biru tetap terbaca */
+.board .tbadge > img,
+.scorebox .tbadge > img,
+.champ .tbadge > img {
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1px #fff);
+}
+
+/* ---------- TV: logo di klasemen dan layar laga ---------- */
+/* Logo TV transparan (tanpa kotak) dengan garis tepi putih tipis; ukuran garis mengikuti tinggi layar */
+.tv-team .tbadge > img {
+  transform: none;
+  filter: drop-shadow(0 0 0.2vh #fff) drop-shadow(0 0 0.2vh #fff) drop-shadow(0 0 0.12vh #fff);
+}
+.tv .tv-std .tmrow .tbadge > img {
+  transform: none;
+  filter: drop-shadow(0 0 0.14vh #fff) drop-shadow(0 0 0.14vh #fff);
+}
+/* Klasemen TV: semua logo memakai slot selebar sama (2,4 : 1), jadi nama tim selalu sejajar seperti di halaman klasemen */
+.tv .tv-std .tmrow .tbadge,
+.tv .tv-std4 .tv-std .tmrow .tbadge {
+  width: 3vh;
+  height: 3vh;
+}
+.tv .tv-std .tmrow .tbadge:has(> img),
+.tv .tv-std4 .tv-std .tmrow .tbadge:has(> img) {
+  width: auto;
+  height: 3vh;
+  aspect-ratio: 2.4;
+  max-width: none;
+}
+/* Layar laga TV: logo lurus tidak boleh setinggi logo perisai; lebarnya dibatasi, tingginya mengikuti rasio */
+.tv-team .tbadge.lg.wide {
+  width: min(34vw, 52vh);
+  height: auto;
+}
+.tv-next .tv-team .tbadge.lg.wide {
+  width: min(26vw, 42vh);
+  height: auto;
+}
+
+/* ---------- Baris daftar: logo di samping nama ---------- */
+/* Semua logo (persegi maupun lurus) ditaruh di slot selebar sama, supaya nama tim selalu mulai dari posisi yang sama */
+.tmrow .tbadge:has(> img),
+.podrow .tbadge:has(> img) {
+  width: auto;
+  aspect-ratio: 2.4;
+  max-width: none;
+  border-radius: 0;
+}
+.tmrow .tbadge.sm:has(> img) {
+  height: 32px;
+}
+summary > .tbadge.tbadge:has(> img),
+.bt .tbadge:has(> img) {
+  width: auto;
+  aspect-ratio: 2;
+  max-width: none;
+  border-radius: 0;
+}
+
+/* Gambar logo di slot daftar: dipasang tepat di dalam kotaknya (tidak ikut mengembang mengikuti ukuran file asli) */
+.tmrow .tbadge:has(> img),
+.podrow .tbadge:has(> img),
+summary > .tbadge.tbadge:has(> img),
+.bt .tbadge:has(> img),
+.tv .tv-std .tmrow .tbadge:has(> img) {
+  position: relative;
+  display: block;
+}
+.tmrow .tbadge:has(> img) > img,
+.podrow .tbadge:has(> img) > img,
+summary > .tbadge.tbadge:has(> img) > img,
+.bt .tbadge:has(> img) > img,
+.tv .tv-std .tmrow .tbadge:has(> img) > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  object-fit: contain;
+}
+
+/* Layar TV "laga berikutnya": logo tim lebih besar */
+.tv-next .tv-team .tbadge.lg {
+  width: min(21vh, 14vw);
+  height: min(21vh, 14vw);
+}
+
+/* Klasemen di layar TV "laga berikutnya": dirapatkan supaya 4 grup tetap muat penuh walau logo laga dibesarkan */
+.tv-next .tv-feed {
+  padding: 1.2vh 2.4vw;
+}
+.tv-next .tv-h {
+  font-size: clamp(18px, 3vh, 40px);
+  margin-bottom: 0.6vh;
+}
+.tv .tv-std4 .tv-std table.std td {
+  padding: 0.15vh 0.3vw;
+}
+
+/* Profil tim: logo lurus tidak boleh mendorong nama tim keluar dari kartu (terutama di HP) */
+.ph-top > div {
+  min-width: 0;
+}
+.ph-top h2 {
+  overflow-wrap: break-word;
+  font-size: clamp(22px, 7vw, 32px);
+}
+.ph-top .tbadge.wide {
+  max-width: 38%;
 }

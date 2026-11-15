@@ -20,7 +20,6 @@ export const STAGES = {
   group: "Babak Grup",
   qf: "Perempat Final",
   sf: "Semi Final",
-  third: "Perebutan Juara 3",
   final: "Final",
 };
 
@@ -520,9 +519,8 @@ export function teamProgress(teamId, teams, matches, events = [], std = null) {
   const result = (m) => { const w = winnerSide(m); return w ? (w === sideOf(m) ? "W" : "L") : null; };
   const ko = mine.filter((m) => m.stage && m.stage !== "group");
   const by = (s) => ko.find((m) => m.stage === s);
-  const fin = by("final"), third = by("third"), sf = by("sf"), qf = by("qf");
+  const fin = by("final"), sf = by("sf"), qf = by("qf");
   if (fin) { const r = result(fin); return r === "W" ? { label: "Juara", out: false } : r === "L" ? { label: "Runner-up", out: false } : { label: "Di final", out: false }; }
-  if (third) { const r = result(third); return r === "W" ? { label: "Juara 3", out: false } : r === "L" ? { label: "Peringkat 4", out: false } : { label: "Perebutan juara 3", out: false }; }
   if (sf) { const r = result(sf); return r === "W" ? { label: "Lolos ke final", out: false } : r === "L" ? { label: "Gugur di Semi Final", out: true } : { label: "Di semi final", out: false }; }
   if (qf) { const r = result(qf); return r === "W" ? { label: "Lolos ke semi final", out: false } : r === "L" ? { label: "Gugur di Perempat Final", out: true } : { label: "Di perempat final", out: false }; }
   if (!team || !team.group) return { label: "–", out: false };
@@ -539,7 +537,7 @@ export function teamProgress(teamId, teams, matches, events = [], std = null) {
 /** Nilai "bertahan sampai mana" per label teamProgress; makin besar makin jauh. Dipakai sebagai penentu urutan imbang top scorer / top assist. */
 const REACH_BY_LABEL = {
   "Juara": 100, "Di final": 95, "Lolos ke final": 95, "Runner-up": 90,
-  "Juara 3": 80, "Perebutan juara 3": 75, "Gugur di Semi Final": 72, "Peringkat 4": 70,
+  "Gugur di Semi Final": 72,
   "Di semi final": 60, "Lolos ke semi final": 60,
   "Di perempat final": 40, "Lolos ke perempat final": 40, "Menunggu adu penalti": 35, "Gugur di Perempat Final": 30,
   "Masih di babak grup": 20, "Gugur di Babak Grup": 10,
@@ -639,7 +637,6 @@ export function computeBracket(teams, matches, events = []) {
   const qf = placeSlots(koSorted(matches, "qf"), 4);
   const sf = placeSlots(koSorted(matches, "sf"), 2);
   const fin = koSorted(matches, "final")[0] || null;
-  const third = koSorted(matches, "third")[0] || null;
 
   const mk = (name, match, a, b) => ({
     name, match,
@@ -651,11 +648,9 @@ export function computeBracket(teams, matches, events = []) {
   const fromQF = (i) => ({ team: qf[i] ? teamOfSide(qf[i], winnerSide(qf[i])) : null, label: `Pemenang QF${i + 1}` });
   const sfSlots = [mk("SF1", sf[0] || null, fromQF(0), fromQF(1)), mk("SF2", sf[1] || null, fromQF(2), fromQF(3))];
   const fromSF = (i) => ({ team: sf[i] ? teamOfSide(sf[i], winnerSide(sf[i])) : null, label: `Pemenang SF${i + 1}` });
-  const loseSF = (i) => ({ team: sf[i] ? teamOfSide(sf[i], loserSide(sf[i])) : null, label: `Kalah SF${i + 1}` });
   return {
     qf: qfSlots, sf: sfSlots,
     final: mk("FINAL", fin, fromSF(0), fromSF(1)),
-    third: third ? mk("JUARA 3", third, loseSF(0), loseSF(1)) : null,
   };
 }
 
@@ -676,7 +671,7 @@ export function unresolvedTies(teams, matches, events = []) {
 /** Daftar pengisian tim yang bisa dilakukan sekarang (hanya laga yang belum mulai). */
 export function planKnockout(teams, matches, events = []) {
   const b = computeBracket(teams, matches, events);
-  const slots = [...b.qf, ...b.sf, b.final, ...(b.third ? [b.third] : [])];
+  const slots = [...b.qf, ...b.sf, b.final];
   const out = [];
   for (const s of slots) {
     const m = s.match;

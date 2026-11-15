@@ -80,10 +80,7 @@ export function championInfo(matches) {
   const w = winnerSide(fin);
   if (!w) return null;
   const pick = (m, s) => (s === "A" ? m.teamA : m.teamB);
-  const third = matches.find((m) => m.stage === "third" && m.status === "ft");
-  const tw = winnerSide(third);
   return {
     fin, champion: pick(fin, w), runnerUp: pick(fin, w === "A" ? "B" : "A"),
-    third: tw ? pick(third, tw) : null, fourth: tw ? pick(third, tw === "A" ? "B" : "A") : null,
   };
 }

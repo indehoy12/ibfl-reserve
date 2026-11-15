@@ -118,7 +118,7 @@ Admin → Pertandingan → Semua pertandingan → **Kelola** laga. Urutannya sen
 - **Profil tim dan pemain** (`#/tim/ID`, `#/pemain/ID` di website; `#team/ID`, `#player/ID` di admin): main, M-S-K, gol, kebobolan, assist, kartu, daftar pemain dengan statistiknya, dan riwayat laga. Data dihitung dari kejadian yang sudah ada (`js/profile.js`), tanpa data baru.
 - **Statistik tim (admin)**: Tim & Pemain → Statistik tim. Tabel semua tim (gol, kebobolan, assist, kuning, merah) yang bisa diurutkan, ikut ke file Excel sebagai lembar *Statistik tim* dan *Statistik pemain*.
 - **Riwayat pertemuan**: di halaman laga (tab Ringkasan, website dan admin): pertemuan lain kedua tim yang sudah selesai, plus total menang/seri/kalah.
-- **Juara dan arsip** (`#/juara`): muncul di menu Info dan di beranda setelah final selesai: juara, runner-up, juara 3, peringkat 4, penghargaan, angka turnamen, klasemen akhir, dan arsip semua hasil per fase. Dashboard admin juga menampilkan juara.
+- **Juara dan arsip** (`#/juara`): muncul di menu Info dan di beranda setelah final selesai: juara, runner-up, penghargaan, angka turnamen, klasemen akhir, dan arsip semua hasil per fase. Dashboard admin juga menampilkan juara.
 
 ### Adu penalti (babak gugur yang masih seri setelah waktu normal / perpanjangan)
 1. Tekan **Lanjut adu penalti** (dari ET2) atau **Langsung adu penalti** (dari babak 2). Papan adu penalti muncul di halaman Kelola laga.
