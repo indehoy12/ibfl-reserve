@@ -2487,6 +2487,13 @@ details.team,
   font-size: 18px;
 }
 
+/* ---------- Layar lebar: kontainer lebih lega (halaman ikut diperbesar oleh js/fit.js) ---------- */
+@media (min-width: 1280px) {
+  :root {
+    --maxw: 1240px;
+  }
+}
+
 /* ---------- Layar TV / proyektor (#/tv) ---------- */
 body.tv-mode {
   background: #030b15;
@@ -2530,7 +2537,7 @@ body.tv-mode {
   align-items: center;
   gap: 2vw;
   font-family: var(--font-d);
-  font-size: clamp(18px, 3.4vh, 44px);
+  font-size: clamp(18px, 3.4vh, 132px);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -2573,7 +2580,7 @@ body.tv-mode {
   text-align: center;
   font-family: var(--font-d);
   font-weight: 700;
-  font-size: clamp(26px, 6.4vh, 96px);
+  font-size: clamp(26px, 6.4vh, 288px);
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
@@ -2588,18 +2595,18 @@ body.tv-mode {
 .tv-score {
   font-family: var(--font-d);
   font-weight: 700;
-  font-size: clamp(70px, 22vh, 320px);
+  font-size: clamp(70px, 22vh, 960px);
   line-height: 0.9;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .tv-score.vs {
   color: #6fa6dc;
-  font-size: clamp(56px, 17vh, 240px);
+  font-size: clamp(56px, 17vh, 720px);
 }
 .tv-clock {
   font-family: var(--font-d);
-  font-size: clamp(36px, 9.5vh, 150px);
+  font-size: clamp(36px, 9.5vh, 450px);
   line-height: 1.1;
   color: #f2bd6b;
   letter-spacing: 0.05em;
@@ -2610,12 +2617,12 @@ body.tv-mode {
   margin-top: 1vh;
 }
 .tv-status .pill {
-  font-size: clamp(18px, 3.8vh, 48px);
+  font-size: clamp(18px, 3.8vh, 144px);
   padding: 0.12em 0.6em;
 }
 .tv-note {
   margin-top: 1vh;
-  font-size: clamp(16px, 3.2vh, 40px);
+  font-size: clamp(16px, 3.2vh, 120px);
   color: #cbe0f6;
 }
 .tv-feed {
@@ -2632,7 +2639,7 @@ body.tv-mode {
   align-items: center;
   gap: 1.4vw;
   padding: 0.6vh 0;
-  font-size: clamp(16px, 3.3vh, 42px);
+  font-size: clamp(16px, 3.3vh, 126px);
 }
 .tv-ev + .tv-ev {
   border-top: 1px solid rgba(255, 255, 255, 0.14);
@@ -2664,7 +2671,7 @@ body.tv-mode {
 }
 .tv-empty,
 .tv-last {
-  font-size: clamp(16px, 3.3vh, 42px);
+  font-size: clamp(16px, 3.3vh, 126px);
   color: #cbe0f6;
 }
 .tv-last b {
@@ -2674,14 +2681,14 @@ body.tv-mode {
 }
 .tv-h {
   font-family: var(--font-d);
-  font-size: clamp(18px, 3.4vh, 44px);
+  font-size: clamp(18px, 3.4vh, 132px);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #9fc6e8;
   margin-bottom: 0.8vh;
 }
 .tv-std table.std {
-  font-size: clamp(13px, 2.2vh, 28px);
+  font-size: clamp(13px, 2.2vh, 84px);
   color: #fff;
 }
 .tv-std table.std th {
@@ -2723,7 +2730,7 @@ body.tv-mode {
 }
 .tv-solo h1 {
   font-family: var(--font-d);
-  font-size: clamp(40px, 13vh, 200px);
+  font-size: clamp(40px, 13vh, 600px);
   line-height: 1;
 }
 .tv-idle {
@@ -2738,7 +2745,7 @@ body.tv-mode {
 }
 .tv-lucol h3 {
   font-family: var(--font-d);
-  font-size: clamp(16px, 3vh, 40px);
+  font-size: clamp(16px, 3vh, 120px);
   color: #f2bd6b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -2748,7 +2755,7 @@ body.tv-mode {
   display: flex;
   align-items: center;
   gap: 1.2vw;
-  font-size: clamp(13px, 2.4vh, 32px);
+  font-size: clamp(13px, 2.4vh, 96px);
   padding: 0.2vh 0;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
@@ -2773,7 +2780,7 @@ body.tv-mode {
 }
 .tv-sub {
   margin-top: 0.5vh;
-  font-size: clamp(11px, 1.9vh, 24px);
+  font-size: clamp(11px, 1.9vh, 72px);
   color: #9fc6e8;
 }
 
@@ -2818,7 +2825,7 @@ body.tv-mode {
   display: flex;
   align-items: center;
   gap: 2vw;
-  font-size: clamp(14px, 2.7vh, 34px);
+  font-size: clamp(14px, 2.7vh, 102px);
   padding: 0.5vh 0;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
@@ -2849,7 +2856,7 @@ body.tv-mode {
 }
 .tv-statcol h3 {
   font-family: var(--font-d);
-  font-size: clamp(16px, 3vh, 40px);
+  font-size: clamp(16px, 3vh, 120px);
   color: #f2bd6b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -2859,7 +2866,7 @@ body.tv-mode {
   display: flex;
   justify-content: space-between;
   gap: 1vw;
-  font-size: clamp(13px, 2.5vh, 32px);
+  font-size: clamp(13px, 2.5vh, 96px);
   padding: 0.3vh 0;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   font-weight: 600;
@@ -2950,7 +2957,7 @@ body.tv-mode {
   font-size: 0.62em;
 }
 .tv-next .tv-team {
-  font-size: clamp(20px, 4.2vh, 64px);
+  font-size: clamp(20px, 4.2vh, 192px);
   gap: 1vh;
 }
 .tv-next .tv-team .tbadge.lg {
@@ -2959,13 +2966,13 @@ body.tv-mode {
   font-size: min(4.8vh, 3.4vw);
 }
 .tv-next .tv-score.vs {
-  font-size: clamp(36px, 9vh, 130px);
+  font-size: clamp(36px, 9vh, 390px);
 }
 .tv-next .tv-clock {
-  font-size: clamp(30px, 7vh, 110px);
+  font-size: clamp(30px, 7vh, 330px);
 }
 .tv-next .tv-note {
-  font-size: clamp(14px, 2.4vh, 30px);
+  font-size: clamp(14px, 2.4vh, 90px);
   margin-top: 0.4vh;
 }
 .tv-next .tv-feed {
@@ -2974,33 +2981,33 @@ body.tv-mode {
   padding: 2vh 2.4vw;
 }
 .tv-next .tv-h {
-  font-size: clamp(20px, 4vh, 52px);
+  font-size: clamp(20px, 4vh, 156px);
   margin-bottom: 1.2vh;
 }
 .tv-next .tv-std table.std {
-  font-size: clamp(16px, 3.1vh, 40px);
+  font-size: clamp(16px, 3.1vh, 120px);
 }
 .tv-next .tv-std table.std td {
   padding: 0.9vh 0.5vw;
 }
 .tv-next .tv-row {
-  font-size: clamp(16px, 3.4vh, 44px);
+  font-size: clamp(16px, 3.4vh, 132px);
   padding: 1.1vh 0;
 }
 .tv-next .tv-lu {
-  font-size: clamp(15px, 3.2vh, 42px);
+  font-size: clamp(15px, 3.2vh, 126px);
   padding: 0.7vh 0;
 }
 .tv-next .tv-lucol h3,
 .tv-next .tv-statcol h3 {
-  font-size: clamp(18px, 3.6vh, 48px);
+  font-size: clamp(18px, 3.6vh, 144px);
 }
 .tv-next .tv-pl {
-  font-size: clamp(15px, 3.2vh, 42px);
+  font-size: clamp(15px, 3.2vh, 126px);
   padding: 0.8vh 0;
 }
 .tv-next .tv-sub {
-  font-size: clamp(13px, 2.4vh, 30px);
+  font-size: clamp(13px, 2.4vh, 90px);
 }
 .tv-next .tv-banner {
   height: 100%;
@@ -3069,10 +3076,10 @@ body.tv-mode {
   width: auto;
 }
 .tv-next .tv-h {
-  font-size: clamp(20px, 3.8vh, 48px);
+  font-size: clamp(20px, 3.8vh, 144px);
 }
 .tv-next .tv-std table.std {
-  font-size: clamp(16px, 3.2vh, 42px);
+  font-size: clamp(16px, 3.2vh, 126px);
 }
 .tv-next .tv-std table.std td {
   padding: 1.2vh 0.5vw;
@@ -3484,14 +3491,14 @@ table.std tr.out td.rank::before {
 }
 .tv .tv-std4 .tv-std h4 {
   font-family: var(--font-d);
-  font-size: clamp(13px, 2.4vh, 32px);
+  font-size: clamp(13px, 2.4vh, 96px);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #f2bd6b;
   margin: 0 0 0.2vh;
 }
 .tv .tv-std4 .tv-std table.std {
-  font-size: clamp(11px, 2vh, 26px);
+  font-size: clamp(11px, 2vh, 78px);
 }
 .tv .tv-std4 .tv-std table.std th {
   padding: 0.2vh 0.3vw;
@@ -5111,3 +5118,154 @@ summary > .tbadge.tbadge:has(> img) > img,
 .ph-top .tbadge.wide {
   max-width: 38%;
 }
+<<<<<<< HEAD
+=======
+
+/* ---------- Baris laga (beranda, jadwal, hasil, riwayat pertemuan, TV): logo di samping nama tim ---------- */
+.vt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.vt .n,
+.res .tn .n,
+.scoreline .t .n {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.vt .s {
+  margin-left: auto;
+  font-family: var(--font-d);
+  font-size: 20px;
+  font-weight: 700;
+}
+.mrow .vt + .vt {
+  margin-top: 6px;
+}
+.res .tn,
+.scoreline .t {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.res .tn.r,
+.scoreline .t.r {
+  justify-content: flex-end;
+  text-align: right;
+}
+/* Semua logo di baris laga memakai slot selebar sama, supaya nama tim sejajar */
+.vt .tbadge:has(> img),
+.res .tn .tbadge:has(> img),
+.scoreline .t .tbadge:has(> img) {
+  width: auto;
+  aspect-ratio: 2;
+  max-width: none;
+  border-radius: 0;
+  position: relative;
+  display: block;
+}
+.vt .tbadge:has(> img) > img,
+.res .tn .tbadge:has(> img) > img,
+.scoreline .t .tbadge:has(> img) > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  object-fit: contain;
+}
+.res .tn .tbadge:has(> img),
+.scoreline .t .tbadge:has(> img) {
+  aspect-ratio: 1.6;
+}
+/* Tim yang belum pasti (babak gugur): tanda tanya di slot yang sama */
+.vt .tbadge.ph,
+.res .tn .tbadge.ph,
+.scoreline .t .tbadge.ph {
+  width: 48px;
+  height: 24px;
+  border: 0;
+  border-radius: 0;
+  background: none !important;
+  color: var(--ink-3);
+  font-size: 16px;
+}
+.res .tn .tbadge.ph,
+.scoreline .t .tbadge.ph {
+  width: 38px;
+}
+/* TV: jadwal dan hasil terakhir */
+.tv-teams {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6vh 1.2vw;
+}
+.tv-teams .vt {
+  gap: 0.9vw;
+}
+.tv-teams .tbadge,
+.tv-teams .tbadge.sm {
+  height: 3.4vh;
+}
+.tv-teams .tbadge:has(> img) {
+  aspect-ratio: 2.2;
+}
+.tv-teams .tbadge:has(> img) > img {
+  transform: none;
+  filter: drop-shadow(0 0 0.14vh #fff) drop-shadow(0 0 0.14vh #fff);
+}
+.tv-teams .tbadge.ph {
+  width: 6vh;
+  color: #f2bd6b;
+}
+
+/* Nama tim jangan terpotong di tengah kata; di layar sempit logo ditaruh di atas nama */
+.vt .n,
+.res .tn .n,
+.scoreline .t .n {
+  overflow-wrap: break-word;
+}
+@media (max-width: 560px) {
+  .res .tn,
+  .scoreline .t {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .res .tn.r,
+  .scoreline .t.r {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+  }
+  .res .tn .tbadge:has(> img),
+  .scoreline .t .tbadge:has(> img) {
+    height: 26px;
+    aspect-ratio: 2;
+  }
+  .scoreline .t {
+    font-size: 15px;
+  }
+}
+
+/* ---------- Logo tim: tajam dan menyesuaikan bentuk di layar besar ---------- */
+.tbadge > img {
+  image-rendering: -webkit-optimize-contrast;
+  object-fit: contain;
+}
+/* Layar lebar (halaman diperbesar oleh js/fit.js): logo besar di papan skor beranda ikut membesar dan tetap utuh, baik logo persegi maupun lurus */
+@media (min-width: 1280px) {
+  .board .tbadge.lg,
+  .scorebox .tbadge.lg {
+    width: 88px;
+    height: 88px;
+  }
+  .board .tbadge.lg.wide,
+  .scorebox .tbadge.lg.wide {
+    width: auto;
+    height: auto;
+    max-width: 180px;
+  }
+}
+>>>>>>> e078565 (update website)

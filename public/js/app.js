@@ -37,6 +37,12 @@ function badge(team, sm = false, size = "") {
   return `<span class="${base}" style="background:${colorFor(team)}">${esc(initials(team))}</span>`;
 }
 const tName = (id) => state.teamById[id]?.name ?? "Belum ditentukan";
+// Logo + nama untuk satu sisi laga (A atau B). Tim yang belum pasti (babak gugur) memakai tanda tanya.
+const sideBadge = (m, side) => {
+  const t = state.teamById[side === "A" ? m.teamA : m.teamB];
+  return t ? badge(t, true) : `<span class="tbadge sm ph" aria-hidden="true">?</span>`;
+};
+const vt = (m, side, extra = "") => `<span class="vt">${sideBadge(m, side)}<span class="n">${esc(sideName(m, side))}</span>${extra}</span>`;
 // Nama sisi laga; untuk babak gugur yang timnya belum pasti tampil "Juara A", "Pemenang QF1", dst.
 let slotByMatch = new Map();
 function sideName(m, side) {
@@ -226,7 +232,7 @@ function homeView() {
   if (live.length) {
     h += `<div class="head"><h2>Sedang berlangsung</h2></div>` + live.map((m) => `<a class="livecard" href="#/laga/${esc(m.id)}">
       <div class="top"><span>${matchLabel(m)}</span>${statusPill(m)}</div>
-      <div class="scoreline"><span class="t">${esc(sideName(m, "A"))}</span><span class="s">${scoreText(m)}</span><span class="t r">${esc(sideName(m, "B"))}</span></div></a>`).join("");
+      <div class="scoreline"><span class="t">${sideBadge(m, "A")}<span class="n">${esc(sideName(m, "A"))}</span></span><span class="s">${scoreText(m)}</span><span class="t r"><span class="n">${esc(sideName(m, "B"))}</span>${sideBadge(m, "B")}</span></div></a>`).join("");
   }
   h += `<div class="head"><h2>Laga berikutnya</h2><a href="#/jadwal">Semua jadwal</a></div><div class="sheet">${next.length ? next.map(matchRow).join("") : `<p class="empty">Belum ada jadwal berikutnya.</p>`}</div>`;
   h += `<div class="head"><h2>Hasil terakhir</h2></div><div class="sheet">${last.length ? last.map(resultRow).join("") : `<p class="empty">Belum ada pertandingan yang selesai.</p>`}</div>`;
@@ -246,14 +252,14 @@ function matchRow(m) {
   const today = dayKey(new Date()) === dayKey(m.kickoff);
   return `<a class="mrow" href="#/laga/${esc(m.id)}">
     <div class="when">${timeStr(m.kickoff)}${today ? "" : `<small>${dayShort(m.kickoff)}</small>`}</div>
-    <div class="vs">${esc(sideName(m, "A"))} vs ${esc(sideName(m, "B"))}<span class="sub">${matchLabel(m)}</span></div><span></span></a>`;
+    <div class="vs">${vt(m, "A")}${vt(m, "B")}<span class="sub">${matchLabel(m)}</span></div><span></span></a>`;
 }
 function resultRow(m) {
   const a = m.scoreA ?? 0, b = m.scoreB ?? 0;
   return `<a class="res" href="#/laga/${esc(m.id)}">
-    <span class="tn ${a > b ? "win" : ""}">${esc(sideName(m, "A"))}</span>
+    <span class="tn ${a > b ? "win" : ""}">${sideBadge(m, "A")}<span class="n">${esc(sideName(m, "A"))}</span></span>
     <span class="sc">${a} – ${b}</span>
-    <span class="tn r ${b > a ? "win" : ""}">${esc(sideName(m, "B"))}</span></a>`;
+    <span class="tn r ${b > a ? "win" : ""}"><span class="n">${esc(sideName(m, "B"))}</span>${sideBadge(m, "B")}</span></a>`;
 }
 
 // ---------- Jadwal ----------
@@ -285,10 +291,9 @@ function jadwalView() {
     if (isAnchor) anchored = true;
     h += `<div class="day"><div class="daygroup" ${isAnchor ? 'id="today-anchor"' : ""}>${k === "tbd" ? "Waktu akan ditentukan" : dayLong(list[0].kickoff)}${k === todayKey ? " (hari ini)" : ""}</div><div class="sheet">`;
     h += list.map((m) => {
-      const mid = m.status === "scheduled"
-        ? `${esc(sideName(m, "A"))} vs ${esc(sideName(m, "B"))}`
-        : `${esc(sideName(m, "A"))} <b>${scoreText(m)}</b> ${esc(sideName(m, "B"))}${penNote(m)}`;
-      return `<a class="mrow ${m.status === "live" ? "liverow" : ""}" href="#/laga/${esc(m.id)}"><div class="when">${timeStr(m.kickoff)}</div><div class="vs">${mid}<span class="sub">${matchLabel(m)}</span></div>${m.status === "scheduled" ? "<span></span>" : statusPill(m)}</a>`;
+      const played = m.status !== "scheduled";
+      const mid = `${vt(m, "A", played ? `<span class="s">${m.scoreA ?? 0}</span>` : "")}${vt(m, "B", played ? `<span class="s">${m.scoreB ?? 0}</span>` : "")}`;
+      return `<a class="mrow ${m.status === "live" ? "liverow" : ""}" href="#/laga/${esc(m.id)}"><div class="when">${timeStr(m.kickoff)}</div><div class="vs">${mid}<span class="sub">${matchLabel(m)}${played ? penNote(m) : ""}</span></div>${m.status === "scheduled" ? "<span></span>" : statusPill(m)}</a>`;
     }).join("");
     h += `</div></div>`;
   }
@@ -908,8 +913,8 @@ function tvLineup(m) {
 }
 let tvPane = 0; // nomor bagian bawah layar; naik tiap 15 detik (sama dengan durasi video TV) saat tidak ada laga live
 const tvRows = (title, rows) => `<h3 class="tv-h">${title}</h3>${rows}`;
-const tvSchedule = (list) => tvRows("Jadwal berikutnya", list.map((m) => `<div class="tv-row"><span class="tv-when">${m.kickoff ? `${esc(dayLong(m.kickoff).replace(/\s\d{4}$/, ""))}, ${esc(timeStr(m.kickoff))}` : "Waktu akan ditentukan"}</span><span class="tv-teams">${esc(sideName(m, "A"))} <i>vs</i> ${esc(sideName(m, "B"))}</span><span class="tv-grp">${matchLabel(m)}</span></div>`).join(""));
-const tvResults = (list) => tvRows("Hasil terakhir", list.map((m) => `<div class="tv-row"><span class="tv-when">${matchLabel(m)}</span><span class="tv-teams">${esc(sideName(m, "A"))} <b>${scoreText(m)}</b> ${esc(sideName(m, "B"))}${penNote(m)}</span></div>`).join(""));
+const tvSchedule = (list) => tvRows("Jadwal berikutnya", list.map((m) => `<div class="tv-row"><span class="tv-when">${m.kickoff ? `${esc(dayLong(m.kickoff).replace(/\s\d{4}$/, ""))}, ${esc(timeStr(m.kickoff))}` : "Waktu akan ditentukan"}</span><span class="tv-teams">${vt(m, "A")} <i>vs</i> ${vt(m, "B")}</span><span class="tv-grp">${matchLabel(m)}</span></div>`).join(""));
+const tvResults = (list) => tvRows("Hasil terakhir", list.map((m) => `<div class="tv-row"><span class="tv-when">${matchLabel(m)}</span><span class="tv-teams">${vt(m, "A")} <b>${scoreText(m)}</b> ${vt(m, "B")}${penNote(m)}</span></div>`).join(""));
 function tvStats(stats) {
   const col = (title, key) => {
     const l = topBy(stats, key, 3);

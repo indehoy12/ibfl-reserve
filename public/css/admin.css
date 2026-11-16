@@ -221,6 +221,11 @@ h2.sect span {
   color: #fff;
   box-shadow: 0 8px 18px -8px rgba(11, 42, 74, 0.7);
 }
+@media (min-width: 1280px) {
+  main#app {
+    max-width: 1200px;
+  }
+}
 @media (min-width: 900px) {
   .tabbar,
   .subnav {
@@ -3437,3 +3442,24 @@ body.admin {
   height: 100%;
   object-fit: contain;
 }
+<<<<<<< HEAD
+=======
+
+/* Kolom unggah logo (logo bawaan sudah dihapus, semua logo diunggah sendiri) */
+.logo-up {
+  margin-top: 14px;
+  padding: 14px;
+  border: 2px dashed var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.logo-up label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.logo-up input[type="file"] {
+  width: 100%;
+  font-size: 15px;
+}
+>>>>>>> e078565 (update website)

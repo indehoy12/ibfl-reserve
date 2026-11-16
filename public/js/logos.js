@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Logo tim bawaan (assets/logos/*.webp). Sudah dipangkas rapat, diratakan ke tengah, dan ukurannya diseragamkan.
 // Urutan prioritas logo sebuah tim:
 // (1) logoId "none" = tanpa logo (lingkaran singkatan); (2) logoId "upload" = logo yang diunggah sendiri di admin;
@@ -175,4 +176,17 @@ export function logoOf(team) {
   const w = words(team.name);
   const m = LOGOS.find((x) => x.keys.some((k) => w.includes(k)));
   return m ? pack(m) : up;
+=======
+// Logo tim: hanya logo yang diunggah sendiri lewat admin (tidak ada lagi logo bawaan).
+// Urutan: (1) logoId "none" = tanpa logo (lingkaran singkatan); (2) logo unggahan (logoUrl); (3) tanpa logo.
+// Mengembalikan { id, url, wide, ratio } atau null. "wide" = logo lurus/memanjang, "ratio" = lebar : tinggi.
+export const LOGOS = [];
+export const bundledUrl = () => "";
+
+export function logoOf(team) {
+  if (!team || team.logoId === "none") return null;
+  const u = team.logoUrl;
+  if (!u || String(u).startsWith("/assets/logos/")) return null; // sisa logo bawaan lama diabaikan
+  return { id: "upload", url: u, wide: !!team.logoWide, ratio: Number(team.logoRatio) || 2 };
+>>>>>>> e078565 (update website)
 }
