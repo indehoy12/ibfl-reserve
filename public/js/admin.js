@@ -7,11 +7,7 @@ import { state, startStore, onChange, isReady } from "./store.js";
 import { parseFile, buildPlan, buildOps, LIMITS } from "./importer.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { buildXlsx } from "./exporter.js";
-<<<<<<< HEAD
-import { LOGOS, logoOf, bundledUrl } from "./logos.js";
-=======
 import { logoOf } from "./logos.js";
->>>>>>> e078565 (update website)
 import {
   STAGES, esc, timeStr, dayShort, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
   planKnockout, computeBracket, unresolvedTies, finalScore, scoreFromEvents, matchReadiness, lineupIds, FUTSAL_STARTERS, nowMs, syncServerTime, ballSvg,
@@ -810,19 +806,10 @@ function teamView(id) {
         <div style="grid-column:1 / -1"><button class="btn orange" type="submit">Simpan info tim</button></div></form></div>
     <div class="panel"><h2 class="a">Logo tim</h2>
       <div class="logo-edit">${badge(t, "lg")}
-<<<<<<< HEAD
-        <div><b>${logoOf(t) ? esc(LOGOS.find((l) => l.id === logoOf(t).id)?.name || "Logo unggahan") : "Belum ada logo"}</b>
-          <p class="hint" style="margin:4px 0 0">Logo bawaan dikenali otomatis dari nama tim. Pilih logo lain di bawah bila perlu.</p></div></div>
-      <div class="logo-pick">${LOGOS.map((l) => `<button type="button" class="logo-opt${logoOf(t)?.id === l.id ? " on" : ""}" data-act="pick-logo" data-id="${esc(t.id)}" data-logo="${l.id}" title="${esc(l.name)}"><span><img src="${esc(bundledUrl(l.id))}" alt=""></span><small>${esc(l.name)}</small></button>`).join("")}</div>
-      <details class="logo-more"><summary>Atau unggah logo sendiri</summary>
-        <div style="margin-top:10px"><input type="file" accept="image/*" data-logo="${esc(t.id)}"></div>
-        <p class="hint">PNG latar transparan atau SVG, minimal 256 px. Ruang kosong di sekitar logo dipangkas otomatis, jadi logo lurus tidak perlu dibuat persegi.</p></details>
-=======
         <div><b>${logoOf(t) ? "Logo unggahan" : "Belum ada logo"}</b>
           <p class="hint" style="margin:4px 0 0">Unggah logo tim sendiri. Tanpa logo, tim tampil dengan lingkaran singkatan nama.</p></div></div>
       <div class="logo-up"><label>${logoOf(t) ? "Ganti logo" : "Unggah logo"}</label><input type="file" accept="image/*" data-logo="${esc(t.id)}">
         <p class="hint">PNG latar transparan atau SVG, sebaiknya 512 px ke atas supaya tajam di layar TV. Ruang kosong di sekitar logo dipangkas otomatis, dan logo lurus/memanjang tidak perlu dibuat persegi: kotaknya menyesuaikan bentuk logo.</p></div>
->>>>>>> e078565 (update website)
       ${logoOf(t) ? `<button class="btn sm danger mini" style="margin-top:12px" data-act="del-logo" data-id="${esc(t.id)}">Hapus logo (pakai singkatan)</button>` : ""}
     </div>
     <div class="panel"><h2 class="a">Pemain <span class="cntb">${roster.length}/${LIMITS.players}</span></h2>
@@ -1444,9 +1431,6 @@ const actions = {
     toast(`Impor selesai: ${st.plan.totals.teams} tim, ${st.plan.totals.players + st.plan.totals.officials} orang`);
     location.hash = "#teams";
   },
-  async "pick-logo"(id, b) {
-    await updateDoc(doc(db, "teams", id), { logoId: b.dataset.logo, logoUrl: null, logoWide: false, logoRatio: null });
-  },
   async "del-logo"(id) {
     if (!(await confirmBox("Tim ini akan kembali memakai lingkaran berisi singkatan nama.", { title: "Hapus logo tim?", ok: "Ya, hapus logo", danger: true }))) return;
     await updateDoc(doc(db, "teams", id), { logoUrl: null, logoWide: false, logoRatio: null, logoId: "none" });
@@ -1747,23 +1731,6 @@ function fileToLogo(file) {
         if (a1 > a0 && b1 > b0) { x0 = a0; y0 = b0; x1 = a1; y1 = b1; }
       } catch { /* gambar dari sumber lain: pakai seluruh gambar */ }
       const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
-<<<<<<< HEAD
-      // 2) kanvas hasil: logo lurus tetap lebar (maks. 3 : 1), selain itu persegi
-      const ratio = cw / ch, wide = ratio > 1.6;
-      const outW = 256, outH = wide ? Math.round(outW / Math.min(ratio, 3)) : 256, pad = 8;
-      const s = Math.min((outW - pad * 2) / cw, (outH - pad * 2) / ch);
-      const dw = Math.round(cw * s), dh = Math.round(ch * s);
-      const c = document.createElement("canvas");
-      c.width = outW; c.height = outH;
-      const cx = c.getContext("2d");
-      cx.imageSmoothingQuality = "high";
-      cx.drawImage(img, x0, y0, cw, ch, Math.round((outW - dw) / 2), Math.round((outH - dh) / 2), dw, dh);
-      URL.revokeObjectURL(url);
-      let out = c.toDataURL("image/webp", 0.9);
-      if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
-      if (out.length > 180000) return reject(new Error("Logo terlalu besar/rumit. Coba gambar yang lebih sederhana."));
-      resolve({ url: out, wide, ratio: wide ? Math.round(Math.min(ratio, 3) * 100) / 100 : 1, lowRes: Math.max(cw, ch) < 100 });
-=======
       // 2) kanvas hasil: logo lurus tetap lebar (maks. 3 : 1), selain itu persegi. Resolusi tinggi supaya tajam di TV dan monitor besar;
       //    bila terlalu besar untuk disimpan, resolusi diturunkan bertahap.
       const ratio = cw / ch, wide = ratio > 1.6, rr = Math.min(ratio, 3);
@@ -1788,7 +1755,6 @@ function fileToLogo(file) {
       URL.revokeObjectURL(url);
       if (out.length > 420000) return reject(new Error("Logo terlalu besar/rumit. Coba gambar yang lebih sederhana."));
       resolve({ url: out, wide, ratio: wide ? Math.round(rr * 100) / 100 : 1, lowRes: Math.max(cw, ch) < 200 });
->>>>>>> e078565 (update website)
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("File bukan gambar yang valid.")); };
     img.src = url;

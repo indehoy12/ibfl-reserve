@@ -5118,8 +5118,6 @@ summary > .tbadge.tbadge:has(> img) > img,
 .ph-top .tbadge.wide {
   max-width: 38%;
 }
-<<<<<<< HEAD
-=======
 
 /* ---------- Baris laga (beranda, jadwal, hasil, riwayat pertemuan, TV): logo di samping nama tim ---------- */
 .vt {
@@ -5268,4 +5266,3 @@ summary > .tbadge.tbadge:has(> img) > img,
     max-width: 180px;
   }
 }
->>>>>>> e078565 (update website)
