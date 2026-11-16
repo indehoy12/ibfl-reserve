@@ -525,6 +525,15 @@ span.chip {
 .tbadge.ph {
   background: #dde2ec;
   color: var(--ink-3);
+  /* reset aturan .ph umum (kotak placeholder) supaya tanda tanya tepat di tengah lingkaran */
+  padding: 0;
+  margin: 0;
+  border: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 /* Logo klub: tanpa lingkaran putih supaya perisai/oval tidak terpotong; file sumber 512 px jadi tajam di layar retina */
 .tbadge:has(> img) {
@@ -5011,14 +5020,16 @@ table.std tr.out td.rank::before {
 .board .tbadge > img,
 .scorebox .tbadge > img,
 .champ .tbadge > img {
-  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1px #fff);
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)
+    drop-shadow(0 0 1px #fff);
 }
 
 /* ---------- TV: logo di klasemen dan layar laga ---------- */
 /* Logo TV transparan (tanpa kotak) dengan garis tepi putih tipis; ukuran garis mengikuti tinggi layar */
 .tv-team .tbadge > img {
   transform: none;
-  filter: drop-shadow(0 0 0.2vh #fff) drop-shadow(0 0 0.2vh #fff) drop-shadow(0 0 0.12vh #fff);
+  filter: drop-shadow(0 0 0.2vh #fff) drop-shadow(0 0 0.2vh #fff)
+    drop-shadow(0 0 0.12vh #fff);
 }
 .tv .tv-std .tmrow .tbadge > img {
   transform: none;
