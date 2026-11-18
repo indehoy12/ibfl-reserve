@@ -233,11 +233,12 @@ export function buildPlan(rows, existingTeams = [], existingPlayers = []) {
  */
 export function buildOps(plan, { existingPlayers = [], matches = [], replace = false, newId }) {
   const ops = [], removed = new Set();
+  const ordBase = Date.now(); let ordN = 0; // urutan masuk grup mengikuti urutan baris di file
   for (const t of plan.teams) {
     const teamId = t.existing ? t.existing.id : newId("teams");
-    if (!t.existing) ops.push({ op: "set", col: "teams", id: teamId, data: { name: t.name, group: t.group } });
+    if (!t.existing) ops.push({ op: "set", col: "teams", id: teamId, data: { name: t.name, group: t.group, ...(t.group ? { ord: ordBase + ordN++ } : {}) } });
     else if (t.group && t.group !== (t.existing.group || "")) {
-      ops.push({ op: "update", col: "teams", id: teamId, data: { group: t.group } });
+      ops.push({ op: "update", col: "teams", id: teamId, data: { group: t.group, ord: ordBase + ordN++ } });
       matches.filter((m) => m.stage === "group" && (m.teamA === teamId || m.teamB === teamId)).forEach((m) => ops.push({ op: "update", col: "matches", id: m.id, data: { group: t.group } }));
     }
     const current = existingPlayers.filter((p) => p.teamId === teamId);

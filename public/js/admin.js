@@ -8,6 +8,7 @@ import { parseFile, buildPlan, buildOps, LIMITS } from "./importer.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { buildXlsx } from "./exporter.js";
 import { logoOf } from "./logos.js";
+import { byEntry } from "./util.js";
 import {
   STAGES, esc, timeStr, dayShort, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
   planKnockout, computeBracket, unresolvedTies, finalScore, scoreFromEvents, matchReadiness, lineupIds, FUTSAL_STARTERS, nowMs, syncServerTime, ballSvg,
@@ -84,7 +85,7 @@ function badge(team, size = "") {
 const matchRef = (id) => doc(db, "matches", id);
 
 function teamOptions(sel, blank = "— belum ditentukan —") {
-  const ts = [...state.teams].sort((a, b) => (a.group || "").localeCompare(b.group || "") || a.name.localeCompare(b.name, "id"));
+  const ts = [...state.teams].sort((a, b) => (a.group || "").localeCompare(b.group || "") || byEntry(a, b));
   return `<option value="">${blank}</option>` + ts.map((t) => `<option value="${esc(t.id)}" ${t.id === sel ? "selected" : ""}>${esc(t.group ? `[${t.group}] ` : "")}${esc(t.name)}</option>`).join("");
 }
 const stageOptions = (sel) => Object.entries(STAGES).map(([k, v]) => `<option value="${k}" ${k === (sel || "group") ? "selected" : ""}>${v}</option>`).join("");
@@ -217,7 +218,7 @@ function loginView() {
 const NAV = [
   { title: "Dashboard", items: [["dashboard", "Ringkasan"]] },
   { title: "Pertandingan", items: [["matches", "Semua pertandingan"], ["match-add", "Tambah pertandingan"]] },
-  { title: "Tim & Pemain", items: [["teams", "Daftar tim"], ["team-stats", "Statistik tim"], ["team-add", "Tambah tim"]] },
+  { title: "Tim & Pemain", items: [["teams", "Daftar tim"], ["group-setup", "Susun grup"], ["team-stats", "Statistik tim"], ["team-add", "Tambah tim"]] },
   { title: "Pengaturan", items: [["set-announce", "Pengumuman"], ["set-timing", "Durasi pertandingan"], ["set-keeper", "Kiper terbaik"], ["set-export", "Ekspor ke Excel"], ["set-reset", "Hapus data"]] },
 ];
 const NAV_ALIAS = { match: "matches", team: "teams", player: "teams", settings: "set-announce" };
@@ -725,7 +726,32 @@ function teamsView() {
   if (!keys.length) return `${head}<div class="panel"><p class="empty">Belum ada tim. Tambahkan lewat menu <a class="lnk" href="#team-add">Tambah tim</a>.</p></div>`;
   let i = 0;
   return `${head}<div class="tgroups">${keys.map((g) => `<section class="tgroup"><h2 class="gtitle">${g ? "Grup " + esc(g) : "Tanpa grup"}</h2>
-    ${byGroup[g].sort((a, b) => a.name.localeCompare(b.name, "id")).map((t) => `<a class="tcard" style="--i:${i++}" href="#team/${esc(t.id)}">${badge(t)}<span class="tc-t"><b>${esc(t.name)}</b><small>${playersOf(t.id).length} pemain</small></span></a>`).join("")}</section>`).join("")}</div>`;
+    ${byGroup[g].sort(byEntry).map((t) => `<a class="tcard" style="--i:${i++}" href="#team/${esc(t.id)}">${badge(t)}<span class="tc-t"><b>${esc(t.name)}</b><small>${playersOf(t.id).length} pemain</small></span></a>`).join("")}</section>`).join("")}</div>`;
+}
+
+// Susun grup: pilih tim untuk tiap posisi (1, 2, 3, ...) sesuai urutan keluar di undian.
+// Nomor posisi disimpan sebagai urutan tim di grupnya, jadi klasemen awal sama persis dengan susunan ini.
+function syncSlots(form) {
+  const sel = [...form.querySelectorAll("select[data-g]")];
+  const used = new Set(sel.map((s) => s.value).filter(Boolean));
+  sel.forEach((s) => s.querySelectorAll("option").forEach((o) => { o.disabled = !!o.value && used.has(o.value) && s.value !== o.value; }));
+}
+function groupSetupView() {
+  const head = `<h1 class="page">Susun grup</h1>`;
+  if (!state.teams.length) return `${head}<div class="panel"><p class="empty">Belum ada tim. Tambahkan dulu lewat menu <a class="lnk" href="#team-add">Tambah tim</a>.</p></div>`;
+  const teams = [...state.teams].sort((a, b) => a.name.localeCompare(b.name, "id"));
+  const gs = [...new Set(["A", "B", "C", "D", ...state.teams.map((t) => t.group).filter(Boolean)])].sort();
+  const per = Math.max(Math.ceil(state.teams.length / gs.length), 4);
+  const cur = (g) => state.teams.filter((t) => t.group === g).sort(byEntry);
+  const cards = gs.map((g) => {
+    const c = cur(g), n = Math.max(per, c.length);
+    return `<section class="tgroup"><h2 class="gtitle">Grup ${esc(g)}</h2>${Array.from({ length: n }, (_, i) => {
+      const key = g + i, want = ui.gs && key in ui.gs ? ui.gs[key] : (c[i]?.id || "");
+      return `<div class="slotrow"><b class="slotno">${i + 1}</b><select data-g="${esc(g)}" data-p="${i + 1}" data-k="${esc(key)}"><option value="">— kosong —</option>${teams.map((t) => `<option value="${esc(t.id)}"${want === t.id ? " selected" : ""}>${esc(t.name)}</option>`).join("")}</select></div>`;
+    }).join("")}</section>`;
+  }).join("");
+  return `${head}<p class="hint">Isi sesuai urutan keluar di undian: posisi 1 = tim yang keluar pertama untuk grup itu, posisi 2 = yang kedua, dan seterusnya. Urutan ini menjadi urutan awal klasemen sebelum ada pertandingan. Satu tim hanya bisa dipilih sekali.</p>
+  <form data-form="group-setup"><div class="tgroups">${cards}</div><div class="form-actions"><button class="btn orange" type="submit">Simpan susunan grup</button></div></form>`;
 }
 
 // ---------- Statistik tim, profil, riwayat pertemuan, juara ----------
@@ -736,7 +762,7 @@ const TS_SORTS = [["group", "Grup"], ["gf", "Gol"], ["assists", "Assist"], ["yel
 function teamStatsView() {
   const key = ui.tsSort || "group";
   const rows = state.teams.map((t) => ({ t, s: teamSummary(t.id, state) }));
-  rows.sort((a, b) => (key === "group" ? (a.t.group || "~").localeCompare(b.t.group || "~") : (b.s[key] ?? 0) - (a.s[key] ?? 0)) || a.t.name.localeCompare(b.t.name, "id"));
+  rows.sort((a, b) => (key === "group" ? (a.t.group || "~").localeCompare(b.t.group || "~") : (b.s[key] ?? 0) - (a.s[key] ?? 0)) || byEntry(a.t, b.t));
   const sum = (k) => rows.reduce((n, r) => n + r.s[k], 0);
   const head = `<h1 class="page">Statistik tim</h1>`;
   if (!rows.length) return `${head}<div class="panel"><p class="empty">Belum ada tim.</p></div>`;
@@ -931,7 +957,7 @@ function exportSheets() {
   const kiper = [["Kiper", "Tim", "Main", "Clean sheet", "Kebobolan", "Rata-rata kebobolan"]];
   computeKeeperStats(state.players, state.matches, state.teams, ev).forEach((g) => kiper.push([g.name, tName(g.teamId), g.played, g.cleanSheets, g.conceded, Number(g.avg.toFixed(2))]));
   const tstat = [["Tim", "Grup", "Main", "Menang", "Seri", "Kalah", "Gol memasukkan", "Gol kemasukan", "Assist", "Kuning", "Merah"]];
-  [...state.teams].sort((a, b) => (a.group || "").localeCompare(b.group || "") || a.name.localeCompare(b.name, "id")).forEach((t) => { const x = teamSummary(t.id, state); tstat.push([t.name, t.group || "", x.played, x.w, x.d, x.l, x.gf, x.ga, x.assists, x.yellow, x.red]); });
+  [...state.teams].sort((a, b) => (a.group || "").localeCompare(b.group || "") || byEntry(a, b)).forEach((t) => { const x = teamSummary(t.id, state); tstat.push([t.name, t.group || "", x.played, x.w, x.d, x.l, x.gf, x.ga, x.assists, x.yellow, x.red]); });
   const pstat = [["Pemain", "Tim", "No", "Gol", "Assist", "Kuning", "Merah"]];
   stats.filter((p) => p.role !== "official").sort((a, b) => tName(a.teamId).localeCompare(tName(b.teamId), "id") || (a.number ?? 999) - (b.number ?? 999)).forEach((p) => pstat.push([p.name, tName(p.teamId), p.number ?? "", p.goals, p.assists, p.yellow, p.red]));
   return [{ name: "Klasemen", rows: klasemen }, { name: "Jadwal & hasil", rows: jadwal }, { name: "Kejadian", rows: kejadian }, { name: "Top scorer", rows: scorer }, { name: "Kartu & skorsing", rows: kartu }, { name: "Kiper", rows: kiper }, { name: "Statistik tim", rows: tstat }, { name: "Statistik pemain", rows: pstat }];
@@ -952,7 +978,7 @@ function resetView() {
 let pending = false;
 let lastBar = "", lastKey = "", enterTimer;
 // Skeleton shimmer: saat data belum siap dan sekilas tiap pindah halaman
-const SKEL_KIND = { matches: "list", "match-add": "form", teams: "grid", "team-stats": "list", player: "list", team: "form", "team-add": "form", settings: "form", "set-announce": "form", "set-timing": "form", "set-keeper": "cards", "set-reset": "form", match: "pos" };
+const SKEL_KIND = { matches: "list", "match-add": "form", teams: "grid", "team-stats": "list", player: "list", team: "form", "team-add": "form", "group-setup": "grid", settings: "form", "set-announce": "form", "set-timing": "form", "set-keeper": "cards", "set-reset": "form", match: "pos" };
 let skelOn = false, skelTimer;
 function startSkeleton() { skelOn = true; clearTimeout(skelTimer); skelTimer = setTimeout(() => { skelOn = false; render(); }, 350); }
 function showSkel(r) {
@@ -986,6 +1012,7 @@ function render() {
   else if (r.name === "match-add") h = matchAddView();
   else if (r.name === "team") h = teamView(r.id);
   else if (r.name === "team-add") h = teamAddView();
+  else if (r.name === "group-setup") h = groupSetupView();
   else if (r.name === "teams") h = teamsView();
   else if (r.name === "team-stats") h = teamStatsView();
   else if (r.name === "player") h = playerAdminView(r.id);
@@ -997,6 +1024,7 @@ function render() {
   else if (r.name === "matches") h = matchesView();
   else h = dashboardView();
   $app.innerHTML = subNav() + h;
+  { const gf = $app.querySelector('form[data-form="group-setup"]'); if (gf) syncSlots(gf); }
   // tombol cabang di HP: tampilkan yang aktif di tengah
   const sn = $app.querySelector(".subnav"), on = sn?.querySelector("a.on");
   if (sn && on) sn.scrollLeft = on.offsetLeft - (sn.clientWidth - on.offsetWidth) / 2;
@@ -1464,6 +1492,29 @@ const actions = {
 };
 
 const forms = {
+  async "group-setup"(f) {
+    const picked = [...f.querySelectorAll("select[data-g]")].filter((s) => s.value).map((s) => ({ id: s.value, g: s.dataset.g, p: Number(s.dataset.p) }));
+    if (!picked.length) throw new Error("Pilih minimal satu tim.");
+    const dup = picked.find((x, i) => picked.findIndex((y) => y.id === x.id) !== i);
+    if (dup) throw new Error(`${state.teamById[dup.id]?.name || "Tim"} dipilih lebih dari satu kali.`);
+    const want = new Map(picked.map((x) => [x.id, x]));
+    const changes = [];
+    for (const t of state.teams) {
+      const w = want.get(t.id);
+      if (w) { if ((t.group || "") !== w.g || t.ord !== w.p) changes.push({ t, group: w.g, ord: w.p }); }
+      else if (t.group || t.ord != null) changes.push({ t, group: "", ord: null });
+    }
+    if (!changes.length) throw new Error("Tidak ada perubahan.");
+    const moved = changes.filter((c) => (c.t.group || "") !== c.group);
+    const affected = state.matches.filter((m) => m.stage === "group" && moved.some((c) => m.teamA === c.t.id || m.teamB === c.t.id));
+    if (affected.length && !(await confirmBox(`${affected.length} pertandingan grup ikut dipindah grupnya mengikuti tim.`, { title: "Pindahkan tim?", ok: "Ya, simpan" }))) return;
+    const b = writeBatch(db);
+    for (const c of changes) b.update(doc(db, "teams", c.t.id), { group: c.group, ord: c.ord });
+    const seen = new Set();
+    for (const c of moved) state.matches.filter((m) => m.stage === "group" && (m.teamA === c.t.id || m.teamB === c.t.id) && !seen.has(m.id)).forEach((m) => { seen.add(m.id); b.update(matchRef(m.id), { group: c.group }); });
+    await b.commit();
+    ui.gs = null;
+  },
   async tiebreak(f) {
     const entries = [...new FormData(f).entries()].filter(([k]) => k.startsWith("tb-")).map(([k, v]) => [k.slice(3), Number(v)]);
     const nums = entries.map(([, n]) => n);
@@ -1560,7 +1611,8 @@ const forms = {
     const fd = new FormData(f);
     const name = String(fd.get("name")).trim();
     if (state.teams.some((t) => t.name.toLowerCase() === name.toLowerCase())) throw new Error("Nama tim sudah ada.");
-    await setDoc(doc(collection(db, "teams")), { name, group: String(fd.get("group")).trim().toUpperCase() });
+    const grp = String(fd.get("group")).trim().toUpperCase();
+    await setDoc(doc(collection(db, "teams")), { name, group: grp, ...(grp ? { ord: Date.now() } : {}) });
     f.reset();
   },
   async "bulk-teams"(f) {
@@ -1572,7 +1624,7 @@ const forms = {
       const [name, group = ""] = l.split(/\s*[|\t;]\s*/);
       if (!name || have.has(name.trim().toLowerCase())) continue;
       have.add(name.trim().toLowerCase());
-      b.set(doc(collection(db, "teams")), { name: name.trim(), group: group.trim().toUpperCase() }); n++;
+      { const g = group.trim().toUpperCase(); b.set(doc(collection(db, "teams")), { name: name.trim(), group: g, ...(g ? { ord: Date.now() + n } : {}) }); } n++;
     }
     if (!n) throw new Error("Tidak ada tim baru (semua sudah ada).");
     await b.commit(); f.reset(); toast(`${n} tim ditambahkan`);
@@ -1583,7 +1635,7 @@ const forms = {
     if (!name) throw new Error("Nama tim tidak boleh kosong.");
     if (state.teams.some((t) => t.id !== id && t.name.trim().toLowerCase() === name.toLowerCase())) throw new Error("Nama tim sudah dipakai tim lain.");
     const b = writeBatch(db);
-    b.update(doc(db, "teams", id), { name, group });
+    b.update(doc(db, "teams", id), { name, group, ...(group && group !== (state.teams.find((t) => t.id === id)?.group || "") ? { ord: Date.now() } : {}) });
     state.matches.filter((m) => m.stage === "group" && (m.teamA === id || m.teamB === id)).forEach((m) => b.update(matchRef(m.id), { group }));
     await b.commit();
   },
@@ -1668,7 +1720,7 @@ const forms = {
 };
 const okText = {
   motm: "Tersimpan",
-  score: "Skor diperbarui", "new-team": "Tim ditambahkan", team: "Tersimpan", player: "Pemain ditambahkan", official: "Official ditambahkan", tiebreak: "Urutan tersimpan",
+  score: "Skor diperbarui", "new-team": "Tim ditambahkan", team: "Tersimpan", player: "Pemain ditambahkan", official: "Official ditambahkan", tiebreak: "Urutan tersimpan", "group-setup": "Susunan grup tersimpan",
   pen: "Pemenang penalti tersimpan", wo: "WO ditetapkan", timing: "Durasi tersimpan", announce: "Pengumuman tersimpan",
 };
 
@@ -1691,6 +1743,7 @@ document.addEventListener("submit", (e) => {
 });
 document.addEventListener("change", async (e) => {
   const t = e.target;
+  if (t.matches?.("select[data-g]")) { (ui.gs ||= {})[t.dataset.k] = t.value; syncSlots(t.closest("form")); return; }
   if (t.matches?.("[data-import-replace]") && importState) { importState.replace = t.checked; return; }
   if (!t.matches?.("[data-import-file]")) return;
   const file = t.files?.[0];

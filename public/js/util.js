@@ -340,7 +340,17 @@ export function gkNow(m, side, players) {
 
 // ---------- Klasemen ----------
 function blank(team) {
-  return { teamId: team.id, name: team.name, group: team.group, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, fp: 0, tb: team.tbRank ?? null, tied: false, tieId: null };
+  return { teamId: team.id, name: team.name, group: team.group, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, fp: 0, tb: team.tbRank ?? null, ord: Number.isFinite(team.ord) ? team.ord : null, tied: false, tieId: null };
+}
+// Urutan masuk grup (field ord = waktu tim dimasukkan ke grupnya, sesuai undian). Dipakai sebagai urutan awal klasemen
+// dan sebagai penentu terakhir saat semua kriteria sama, sehingga tidak jatuh ke urutan abjad.
+// Tim yang belum punya ord ditaruh sesudahnya dan diurutkan abjad seperti sebelumnya.
+export function byEntry(a, b) {
+  const x = Number.isFinite(a.ord) ? a.ord : null, y = Number.isFinite(b.ord) ? b.ord : null;
+  if (x !== null && y !== null && x !== y) return x - y;
+  if (x !== null && y === null) return -1;
+  if (x === null && y !== null) return 1;
+  return (a.name || "").localeCompare(b.name || "", "id");
 }
 // Poin kartu (fair play) untuk pemisah klasemen: makin kecil makin baik.
 // Kuning 1, merah langsung 3. Merah dari kuning kedua hanya +1 karena dua kuningnya sudah dihitung (total 3).
@@ -381,7 +391,7 @@ function sortGroup(rows, doneMatches) {
   // 4) selisih gol keseluruhan (GM - GK), 5) poin kartu (kuning 1, merah 3; lebih sedikit lebih baik),
   // 6) urutan manual hasil adu penalti/undian (field tbRank di tim).
   // Bila semuanya masih sama, tim ditandai "tied" (seri penuh): tidak ditentukan otomatis, panitia mengisi manual.
-  const sorted = [...rows].sort((a, b) => b.pts - a.pts || b.gf - a.gf || a.name.localeCompare(b.name, "id"));
+  const sorted = [...rows].sort((a, b) => b.pts - a.pts || b.gf - a.gf || byEntry(a, b));
   const out = [];
   let i = 0;
   while (i < sorted.length) {
@@ -405,8 +415,8 @@ function sortGroup(rows, doneMatches) {
           || x.fp - y.fp
           || (x.tb ?? 99) - (y.tb ?? 99);
       };
-      tied.sort((x, y) => cmp(x, y) || x.name.localeCompare(y.name, "id"));
-      // tandai blok tim yang benar-benar seri penuh (urutan alfabet hanya tampilan, bukan penentu)
+      tied.sort((x, y) => cmp(x, y) || byEntry(x, y));
+      // tandai blok tim yang benar-benar seri penuh (urutan masuk grup hanya tampilan, bukan penentu)
       let k = 0;
       while (k < tied.length) {
         let l = k + 1;

@@ -3431,3 +3431,8 @@ body.admin {
   width: 100%;
   font-size: 15px;
 }
+
+/* Susun grup */
+.slotrow { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.slotno { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--court); color: #fff; font-family: var(--font-d); font-size: 16px; }
+.slotrow select { flex: 1; min-width: 0; }

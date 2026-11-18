@@ -9,6 +9,7 @@ import {
 } from "./util.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { logoOf } from "./logos.js";
+import { byEntry } from "./util.js";
 
 const $app = document.getElementById("app");
 const $nav = document.getElementById("nav");
@@ -393,7 +394,7 @@ function timView() {
   if (!keys.length) return `<div class="head"><h2>Tim peserta</h2></div><div class="sheet"><p class="empty">Daftar tim belum tersedia.</p></div>`;
   return `<div class="head"><h2>Tim peserta</h2></div><div class="tgroups">` + keys.map((g) => `<div class="tgroup">
     <div class="daygroup">Grup ${esc(g)}</div>
-    ${byGroup[g].sort((a, b) => a.name.localeCompare(b.name, "id")).map((t) => {
+    ${byGroup[g].sort(byEntry).map((t) => {
       const roster = state.players.filter((p) => p.teamId === t.id && p.role !== "official").sort((a, b) => (a.number ?? 999) - (b.number ?? 999));
       const officials = state.players.filter((p) => p.teamId === t.id && p.role === "official");
       return `<details class="team" data-team="${esc(t.id)}" ${openTeams.has(t.id) ? "open" : ""}>
