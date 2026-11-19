@@ -88,7 +88,7 @@ Sidebar kiri bercabang (di HP: tiga menu di bawah layar, cabangnya berupa tombol
 
 ## Saat pertandingan berlangsung (sistem kasir)
 Admin → Pertandingan → Semua pertandingan → **Kelola** laga. Urutannya sengaja dikunci:
-1. **Isi line up dulu** (buka bagian Line up). Ketuk pemain: sekali = Inti, dua kali = Cadangan, tiga kali = batal. Inti wajib **5 pemain dan ada kiper** untuk tiap tim. Tombol **Mulai laga** baru aktif setelah kedua tim lengkap; di daftar laga tertulis "Siap dimulai" atau "Line up kurang".
+1. **Isi line up dulu** (buka bagian Line up). Ketuk pemain: sekali = Inti, dua kali = Cadangan, tiga kali = batal. Inti wajib **5 pemain dan ada kiper** untuk tiap tim; total line up (inti + cadangan) **maksimal 10 pemain** per tim. Tombol **Mulai laga** baru aktif setelah kedua tim lengkap; di daftar laga tertulis "Siap dimulai" atau "Line up kurang".
 2. **Mulai laga** → jam babak 1 berjalan otomatis di layar penonton. Tidak ada input menit manual: menit setiap kejadian diambil dari jam laga.
 3. **Catat kejadian**: ketuk kotak pemain, pilih Gol / Gol penalti / Kartu kuning / Kartu merah / Gol bunuh diri. Untuk gol, ketuk pemain yang assist atau "Tanpa assist". Hanya pemain di line up yang bisa dipilih. Salah catat → **Batalkan** di Riwayat kejadian, skor ikut menyesuaikan.
 4. **Fase laga**: satu tombol utama berubah mengikuti fase (lihat bagian di bawah). Gunakan **Jeda darurat** bila jam harus berhenti.
@@ -168,7 +168,7 @@ Admin → **Tim & Pemain → Tambah tim → Impor Excel / CSV**. Contoh file ada
 Satu baris = satu orang, kolom: **Tim, Grup, Peran, No, Nama**, dan **Kapten** (opsional; urutan bebas, baris pertama = judul).
 - **Kapten**: isi `Ya` (atau `C`, `1`, `x`) di baris kaptennya, kosongkan untuk yang lain. Maksimal satu per tim (lebih dari satu = galat). Bila kolom Kapten tidak ada di file, status kapten yang sudah tersimpan tidak diubah.
 - **Peran**: Pemain, Kiper, atau Official (kosong = Pemain). **No**: nomor punggung 0–99, wajib untuk pemain/kiper, tidak boleh kembar dalam satu tim; kosongkan untuk official.
-- Ketentuan liga: maksimal 10 pemain dan 2 official per tim, 16 tim. Pelanggaran hanya jadi peringatan; no kembar, no kosong, dan nama kosong menghalangi impor sampai file diperbaiki.
+- Ketentuan liga: maksimal 20 pemain terdaftar dan 2 official per tim (line up tiap laga tetap maksimal 10 pemain), 16 tim. Pelanggaran hanya jadi peringatan; no kembar, no kosong, dan nama kosong menghalangi impor sampai file diperbaiki.
 - Ada pratinjau sebelum data disimpan. Impor aman diulang: tim dicocokkan lewat nama, pemain lewat no punggung. Opsi **Ganti total** menghapus pemain lama yang tidak ada di file.
 - Excel `.xlsx` dan CSV (pemisah koma, titik koma, atau tab) didukung. Untuk `.xls` lama, simpan dulu sebagai `.xlsx`.
 - Jangan menaruh NIK/nomor telepon di file: kolom lain diabaikan dan tidak disimpan, karena data website dapat dibaca publik.

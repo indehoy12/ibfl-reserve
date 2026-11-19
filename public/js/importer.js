@@ -11,7 +11,7 @@
 //   Kapten  Ya | C | 1 | x di baris kaptennya  (opsional, maksimal 1 per tim)
 // Kolom lain (mis. NIK, telepon) diabaikan dan TIDAK disimpan, karena data website bersifat publik.
 
-export const LIMITS = { players: 10, officials: 2 };
+export const LIMITS = { players: 20, officials: 2 }; // players = maksimal pemain terdaftar per tim (line up per laga dibatasi LINEUP_MAX di util.js)
 
 const norm = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const clean = (s) => String(s ?? "").replace(/\s+/g, " ").trim();

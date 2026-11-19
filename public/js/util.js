@@ -248,6 +248,8 @@ export function penDots(m, side) {
 
 // ---------- Line up ----------
 export const FUTSAL_STARTERS = 5;
+/** Maksimal pemain di line up satu laga (inti + cadangan). Pemain terdaftar per tim boleh sampai 20. */
+export const LINEUP_MAX = 10;
 /** Daftar masalah line up satu sisi; kosong berarti siap main. */
 export function lineupProblems(match, side, players) {
   const lu = match["lineup" + side] || {};
@@ -257,6 +259,8 @@ export function lineupProblems(match, side, players) {
   const out = [];
   if (starters.length !== FUTSAL_STARTERS) out.push(`Susunan inti harus ${FUTSAL_STARTERS} pemain (baru ${starters.length})`);
   else if (!starters.some((id) => players.find((p) => p.id === id)?.isGK)) out.push("Susunan inti belum ada kiper");
+  const total = starters.length + (lu.subs || []).filter((id) => players.some((p) => p.id === id && p.teamId === teamId)).length;
+  if (total > LINEUP_MAX) out.push(`Line up maksimal ${LINEUP_MAX} pemain (sekarang ${total})`);
   return out;
 }
 export function matchReadiness(match, players) {

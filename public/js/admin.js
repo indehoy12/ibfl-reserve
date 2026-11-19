@@ -11,7 +11,7 @@ import { logoOf } from "./logos.js";
 import { byEntry } from "./util.js";
 import {
   STAGES, esc, timeStr, dayShort, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
-  planKnockout, computeBracket, unresolvedTies, finalScore, scoreFromEvents, matchReadiness, lineupIds, FUTSAL_STARTERS, nowMs, syncServerTime, ballSvg,
+  planKnockout, computeBracket, unresolvedTies, finalScore, scoreFromEvents, matchReadiness, lineupIds, FUTSAL_STARTERS, LINEUP_MAX, nowMs, syncServerTime, ballSvg,
   phaseOf, isPlayPhase, stampAt, stampNow, eventMinute, minuteNow, eventCmp, livePill, ftText, isReadyToStart, phaseActions,
   timingOf, cfgFor, isKnockout, PHASE_NAME, PAUSE_REASONS, periodLimitSec, computeKeeperStats, keeperDetail, teamProgress, skeleton,
   shootout, penDots, PEN_ROUNDS, rtClockHtml, tickRtClocks, computeStandings, computePlayerStats, topBy,
@@ -492,6 +492,8 @@ function draftProblems(m, d) {
     const name = sideName(m, side);
     if (st.length !== FUTSAL_STARTERS) out.push(`${name}: inti ${st.length}/${FUTSAL_STARTERS}`);
     else if (!st.some((p) => p.isGK)) out.push(`${name}: belum ada kiper di susunan inti`);
+    const tot = list.filter((p) => d[side][p.id]).length;
+    if (tot > LINEUP_MAX) out.push(`${name}: line up ${tot}/${LINEUP_MAX}, kelebihan ${tot - LINEUP_MAX} pemain`);
   }
   return out;
 }
@@ -502,7 +504,7 @@ function lineupEditor(m) {
     const list = playersOf(teamId), susp = suspOf(m, side);
     const st = list.filter((p) => d[side][p.id] === "S").length;
     const bn = list.filter((p) => d[side][p.id] === "B").length;
-    return `<div class="lu-col"><div class="lu-title"><b>${esc(sideName(m, side))}</b><span class="${st === FUTSAL_STARTERS ? "okc" : "badc"}">Inti ${st}/${FUTSAL_STARTERS}</span><span class="muted">Cadangan ${bn}</span></div>
+    return `<div class="lu-col"><div class="lu-title"><b>${esc(sideName(m, side))}</b><span class="${st === FUTSAL_STARTERS ? "okc" : "badc"}">Inti ${st}/${FUTSAL_STARTERS}</span><span class="muted">Cadangan ${bn}</span><span class="${st + bn <= LINEUP_MAX ? "muted" : "badc"}">Line up ${st + bn}/${LINEUP_MAX}</span></div>
       <div class="tiles">${list.map((p) => {
         const v = d[side][p.id] || "", sp = susp.get(p.id);
         return `<button type="button" class="tile ${v === "S" ? "is-s" : v === "B" ? "is-b" : ""} ${sp ? "is-susp" : ""}" ${sp && !v ? "disabled" : ""} data-act="lu-toggle" data-id="${esc(p.id)}" data-side="${side}" aria-pressed="${v ? "true" : "false"}">
@@ -510,7 +512,7 @@ function lineupEditor(m) {
       }).join("") || `<p class="hint">Belum ada pemain di tim ini.</p>`}</div></div>`;
   };
   const probs = draftProblems(m, d);
-  return `<p class="hint">Ketuk pemain: sekali = Inti, dua kali = Cadangan, tiga kali = batal. Inti harus 5 pemain dan wajib ada kiper (slot inti terakhir hanya bisa diisi kiper bila belum ada).</p>
+  return `<p class="hint">Ketuk pemain: sekali = Inti, dua kali = Cadangan, tiga kali = batal. Inti harus 5 pemain dan wajib ada kiper (slot inti terakhir hanya bisa diisi kiper bila belum ada). Line up (inti + cadangan) maksimal ${LINEUP_MAX} pemain per tim, walau tim boleh mendaftarkan sampai ${LIMITS.players} pemain.</p>
     ${suspPanel(m)}
     <div class="lu-cols">${col("A")}${col("B")}</div>
     ${probs.length ? `<p class="problems">${probs.map(esc).join(" · ")}</p>` : `<p class="okline">Susunan inti lengkap.</p>`}
@@ -1302,6 +1304,7 @@ const actions = {
     const sp = suspOf(m, side).get(id);
     if (sp && !cur) throw new Error(`${pName(id)} sedang skorsing (${suspReason(sp)}). Panitia bisa membatalkannya di panel Skorsing.`);
     const next = cur === "" ? "S" : cur === "S" ? "B" : "";
+    if (cur === "" && Object.values(d[side]).filter(Boolean).length >= LINEUP_MAX) throw new Error(`Line up sudah ${LINEUP_MAX} pemain (maksimal). Lepas satu pemain dulu sebelum menambah yang baru.`);
     if (next === "S") {
       // slot inti terakhir wajib kiper: kalau 4 inti belum ada kiper, pemain biasa tidak boleh mengisinya
       const team = playersOf(side === "A" ? m.teamA : m.teamB);
@@ -1331,6 +1334,10 @@ const actions = {
     for (const [side, L] of [["A", A], ["B", B]]) {
       const sp = suspOf(m, side), bad = [...L.starters, ...L.subs].find((pid) => sp.has(pid));
       if (bad) throw new Error(`${pName(bad)} (${sideName(m, side)}) sedang skorsing: ${suspReason(sp.get(bad))}. Keluarkan dari line up atau batalkan skorsingnya.`);
+    }
+    for (const [side, L] of [["A", A], ["B", B]]) {
+      const tot = L.starters.length + L.subs.length;
+      if (tot > LINEUP_MAX) throw new Error(`${sideName(m, side)}: line up maksimal ${LINEUP_MAX} pemain (sekarang ${tot}).`);
     }
     if (A.starters.length > FUTSAL_STARTERS || B.starters.length > FUTSAL_STARTERS) throw new Error(`Susunan inti maksimal ${FUTSAL_STARTERS} pemain per tim.`);
     for (const [side, L] of [["A", A], ["B", B]]) {
