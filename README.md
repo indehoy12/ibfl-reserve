@@ -212,7 +212,9 @@ Admin → Pengaturan → **Ekspor ke Excel** → Unduh. Satu file .xlsx berisi l
 - Line up laga berikutnya menampilkan baris **Skorsing** bila ada pemain terskors.
 
 ## Check-in tim (registrasi hari-H)
-- Tab **Tim & Pemain → Check-in tim** dan **Laporan registrasi** di admin. Tiap tim dicek: pemain dan official hadir, nomor punggung (bisa dikoreksi), tanda kiper dan skorsing, catatan, tambah pemain di tempat (maksimal 20).
+- Halaman terpisah di **`/checkin/`** (bukan menu admin). Dibuka lewat tombol **Check-in tim ↗** di bagian bawah sidebar admin dan di Dashboard. Login memakai akun admin yang sama.
+- Per tim: centang pemain dan official hadir, edit nomor punggung, tanda kiper dan skorsing, **kapten** (satu per tim), catatan, tambah pemain (maksimal 20), tambah atau ganti official (maksimal 2).
+- Verifikasi tim meminta konfirmasi, tetap di halaman tim, dan bisa **dibatalkan**. Ada **Reset check-in tim** dan **Reset semua check-in (uji coba)**.
 - Laporan: ringkasan di layar, unduh Excel (Rekap tim, Tidak hadir, Terverifikasi), cetak atau simpan PDF.
-- Hasil disimpan di koleksi Firestore `checkins` (id dokumen = id tim). **Publish ulang `firestore.rules`** supaya aturan `checkins` aktif.
+- Hasil disimpan di koleksi Firestore `checkins` (id dokumen = id tim). **Publish `firestore.rules`** supaya aturan `checkins` aktif. Perubahan nomor, kapten, pemain, dan official menulis ke koleksi `players` yang sama dengan website.
 - Centang hadir belum membatasi editor line up; itu hanya catatan registrasi.

@@ -239,6 +239,7 @@ function topBar() {
     <nav class="side-tree" aria-label="Menu admin">${tree}</nav>
     <div class="side-foot">
       <a class="side-link" href="../#/tv" target="_blank" rel="noopener" title="Buka layar TV di tab baru">Layar TV ↗</a>
+      <a class="side-link" href="../checkin/" target="_blank" rel="noopener" title="Buka halaman registrasi tim di tab baru">Check-in tim ↗</a>
       <a class="side-link" href="../" target="_blank" rel="noopener">Lihat website publik ↗</a>
       <span class="who" title="UID: ${esc(user.uid)}">${esc(user.email)}</span>
       <button class="btn sm ghost" data-act="logout">Keluar</button>
@@ -284,7 +285,7 @@ function dashboardView() {
   const scCard = `<div class="panel"><h2 class="a">Top scorer</h2>${sc.length ? sc.map((p, i) => `<div class="dline"><span>${i + 1}. ${esc(p.name)} <small>${esc(tName(p.teamId))}</small></span><b>${p.goals}</b></div>`).join("") : `<p class="empty">Belum ada gol.</p>`}</div>`;
   const warn = sched.filter((m) => matchReadiness(m, state.players).length).length;
   const alertCard = warn ? `<div class="panel warnbox"><b>${warn} laga terjadwal</b> belum lengkap line up-nya. <a class="lnk" href="#matches">Buka daftar pertandingan</a></div>` : "";
-  return `<h1 class="page">Dashboard <a class="tvbtn" href="../#/tv" target="_blank" rel="noopener" title="Buka layar TV di tab baru">Layar TV ↗</a></h1>${alertCard}${champPanel()}${suspCard()}${kpis}
+  return `<h1 class="page">Dashboard <a class="tvbtn" href="../#/tv" target="_blank" rel="noopener" title="Buka layar TV di tab baru">Layar TV ↗</a> <a class="tvbtn" href="../checkin/" target="_blank" rel="noopener" title="Buka halaman registrasi tim di tab baru">Check-in tim ↗</a></h1>${alertCard}${champPanel()}${suspCard()}${kpis}
     <div class="dgrid">${liveCard}${nextCard}</div>${prog}
     <div class="dgrid">${lastCard}${scCard}</div>
     <div class="panel"><h2 class="a">Klasemen sementara</h2><div class="dstds">${stdCard || `<p class="empty">Belum ada grup.</p>`}</div></div>`;
