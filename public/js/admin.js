@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from "./firebase.js";
 import { state, startStore, onChange, isReady } from "./store.js";
+import * as CK from "./checkin.js";
 import { parseFile, buildPlan, buildOps, LIMITS } from "./importer.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { buildXlsx } from "./exporter.js";
@@ -218,10 +219,10 @@ function loginView() {
 const NAV = [
   { title: "Dashboard", items: [["dashboard", "Ringkasan"]] },
   { title: "Pertandingan", items: [["matches", "Semua pertandingan"], ["match-add", "Tambah pertandingan"]] },
-  { title: "Tim & Pemain", items: [["teams", "Daftar tim"], ["group-setup", "Susun grup"], ["team-stats", "Statistik tim"], ["team-add", "Tambah tim"]] },
+  { title: "Tim & Pemain", items: [["teams", "Daftar tim"], ["group-setup", "Susun grup"], ["team-stats", "Statistik tim"], ["team-add", "Tambah tim"], ["checkin", "Check-in tim"], ["checkin-report", "Laporan registrasi"]] },
   { title: "Pengaturan", items: [["set-announce", "Pengumuman"], ["set-timing", "Durasi pertandingan"], ["set-keeper", "Kiper terbaik"], ["set-export", "Ekspor ke Excel"], ["set-reset", "Hapus data"]] },
 ];
-const NAV_ALIAS = { match: "matches", team: "teams", player: "teams", settings: "set-announce" };
+const NAV_ALIAS = { match: "matches", team: "teams", player: "teams", settings: "set-announce", "checkin-tim": "checkin" };
 const navGroup = (key) => NAV.find((g) => g.items.some(([k]) => k === key));
 const navKey = (r = route()) => { const k = NAV_ALIAS[r.name] || r.name; return navGroup(k) ? k : "dashboard"; };
 
@@ -1008,6 +1009,7 @@ function render() {
   }
   if (skelOn) { showSkel(r); return; }
   delete $app.dataset.skel;
+  if (r.name.startsWith("checkin") && CK.typing()) return; // jangan ganggu yang sedang mengetik
   const open = [...$app.querySelectorAll("details[open]")].map((d) => d.querySelector("summary")?.textContent);
   let h;
   if (r.name === "match") h = matchAdminView(r.id);
@@ -1024,8 +1026,12 @@ function render() {
   else if (r.name === "set-reset") h = resetView();
   else if (r.name === "set-announce" || r.name === "settings") h = announceView();
   else if (r.name === "matches") h = matchesView();
+  else if (r.name === "checkin") h = CK.listView();
+  else if (r.name === "checkin-tim") h = CK.teamView(r.id);
+  else if (r.name === "checkin-report") h = CK.reportView();
   else h = dashboardView();
   $app.innerHTML = subNav() + h;
+  if (r.name.startsWith("checkin")) CK.bind($app);
   { const gf = $app.querySelector('form[data-form="group-setup"]'); if (gf) syncSlots(gf); }
   // tombol cabang di HP: tampilkan yang aktif di tengah
   const sn = $app.querySelector(".subnav"), on = sn?.querySelector("a.on");
@@ -1842,11 +1848,12 @@ setInterval(() => {
   });
 }, 1000);
 
+CK.init({ toast, render: safeRender });
 window.addEventListener("hashchange", () => { ui.sheet = null; ui.draft = null; window.scrollTo(0, 0); startSkeleton(); render(); });
 onChange(safeRender);
 onAuthStateChanged(auth, (u) => {
   user = u || null;
-  if (user) { startStore(); syncServerTime().then(render); }
+  if (user) { startStore(); CK.start(); syncServerTime().then(render); } else CK.stop();
   render();
 });
 render();

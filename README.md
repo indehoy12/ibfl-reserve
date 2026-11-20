@@ -210,3 +210,9 @@ Admin → Pengaturan → **Ekspor ke Excel** → Unduh. Satu file .xlsx berisi l
 - **Gol**: bola masuk gawang + GOOOLL!. **Kartu**: kartu kuning/merah jatuh dengan nama pemain. **Peluit akhir**: skor akhir dan pemenang (9 detik) saat laga ditandai FT. Semua hanya untuk kejadian baru saat TV terbuka.
 - Total kartu (kuning dan merah) tiap tim tampil di bawah nama tim. Pelanggaran akumulatif tidak dicatat.
 - Line up laga berikutnya menampilkan baris **Skorsing** bila ada pemain terskors.
+
+## Check-in tim (registrasi hari-H)
+- Tab **Tim & Pemain → Check-in tim** dan **Laporan registrasi** di admin. Tiap tim dicek: pemain dan official hadir, nomor punggung (bisa dikoreksi), tanda kiper dan skorsing, catatan, tambah pemain di tempat (maksimal 20).
+- Laporan: ringkasan di layar, unduh Excel (Rekap tim, Tidak hadir, Terverifikasi), cetak atau simpan PDF.
+- Hasil disimpan di koleksi Firestore `checkins` (id dokumen = id tim). **Publish ulang `firestore.rules`** supaya aturan `checkins` aktif.
+- Centang hadir belum membatasi editor line up; itu hanya catatan registrasi.
