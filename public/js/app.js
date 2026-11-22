@@ -3,9 +3,9 @@ import { state, startStore, onChange, isReady } from "./store.js";
 import {
   TOURNAMENT, STAGES, esc, timeStr, dayLong, dayShort, dayKey, toDate, sortByKickoff,
   clockText, computeStandings, computePlayerStats, computeKeeperStats, keeperDetail, topBy, computeBracket, winnerSide,
-  livePill, ftText, addedText, eventMinute, eventCmp, phaseOf,
-  QUALIFY_PER_GROUP, suspendedIn, suspReason, eventSide, cardTotals, syncServerTime, nowMs, lineupIds, ballSvg, teamProgress,
-  skeleton, shootout, penScoreText, penDots, rtClockHtml, tickRtClocks,
+  livePill, ftText, addedText, eventMinute, eventCmp,
+  QUALIFY_PER_GROUP, suspendedIn, suspReason, eventSide, syncServerTime, lineupIds, ballSvg, teamProgress,
+  skeleton, shootout, penScoreText, penDots, tickRtClocks,
 } from "./util.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { logoOf } from "./logos.js";
@@ -101,7 +101,6 @@ const openTeams = new Set();
 let scrolledJadwal = false;
 let lastKey = "";
 let lastHtml = "";
-let tvEnter = false; // true: layar TV baru memudar masuk
 // Skeleton shimmer sekilas tiap pindah halaman (selain saat data belum siap)
 let skelOn = false, skelTimer;
 const SKEL_KIND = { home: "home", laga: "detail", tim: "grid" };
@@ -156,16 +155,136 @@ const sponsors = `<div class="sponsors">
   <img src="assets/logo-danantara.png" alt="Danantara Indonesia Sovereign Fund">
 </div>`;
 
-const gallery = `<div class="gallery">
-  <figure class="g-main"><img src="assets/foto/foto-laga-indoprowel.jpg" alt="Pemain Indoprowel merayakan gol di lapangan futsal Industropolis Batang" width="2000" height="2500" loading="lazy" decoding="async"><figcaption>Suasana laga di lapangan Industropolis Batang</figcaption></figure>
-  <figure class="g-wasit"><img src="assets/foto/wasit-salaman.jpg" alt="Kapten tim dan wasit berjabat tangan sebelum pertandingan" width="1600" height="2000" loading="lazy" decoding="async"><figcaption>Sportivitas</figcaption></figure>
-  <figure class="g-gol"><img src="assets/foto/jaring-gawang.jpg" alt="Bola futsal tersangkut di jaring gawang" width="1600" height="2000" loading="lazy" decoding="async"><figcaption>Gol!</figcaption></figure>
-  <figure class="g-tim"><img src="assets/foto/tim-foto.jpg" alt="Para pemain berpose bersama sebelum pertandingan" width="1600" height="2000" loading="lazy" decoding="async"><figcaption>Satu tim</figcaption></figure>
-  <figure class="g-sup"><img src="assets/foto/suporter.jpg" alt="Suporter membawa thunderstick merah mendukung timnya" width="1600" height="2000" loading="lazy" decoding="async"><figcaption>Suporter</figcaption></figure>
-  <figure class="g-arena"><img src="assets/foto/arena-udara.jpg" alt="Foto udara lapangan Sagara Futsal Arena di KEK Industropolis Batang" width="2000" height="1250" loading="lazy" decoding="async"><figcaption>Sagara Futsal Arena</figcaption></figure>
-  <figure class="g-kick"><img src="assets/foto/bola-garis.jpg" alt="Bola futsal di atas garis lapangan" width="1600" height="2000" loading="lazy" decoding="async"><figcaption>Kick off</figcaption></figure>
-  <figure class="g-siap"><img src="assets/foto/bola-lapangan.jpg" alt="Bola futsal di tengah lapangan, penonton menunggu di balik pagar" width="1600" height="2000" loading="lazy" decoding="async"><figcaption>Siap bertanding</figcaption></figure>
-</div>`;
+// Galeri beranda: tiap kotak adalah carousel otomatis (fade halus). Bentuk kotak mengikuti arah foto supaya tidak ada yang terpotong:
+// "gw" = landscape lebar, "gh" = landscape setengah baris, "gn" = potret (sempit). Satu kotak hanya berisi foto dengan arah yang sama.
+// Berhenti sebentar saat kursor di atasnya atau setelah digeser; klik foto untuk memperbesar (foto utuh).
+const GALLERY = [
+  ["gw", "Suasana laga di lapangan", "Pemain bertanding di lapangan futsal Industropolis Batang", ["lapangan-3", "lapangan-4", "lapangan-5", "lapangan-6"]],
+  ["gn", "Momen laga", "Momen pemain di lapangan futsal Industropolis Batang", ["lapangan-1", "lapangan-2", "sportivitas-4", "lapangan-7", "sportivitas-10", "lapangan-8"]],
+  ["gh", "Sportivitas", "Salaman dan pengundian koin bersama wasit sebelum pertandingan", ["sportivitas-1", "sportivitas-2", "sportivitas-3", "sportivitas-5", "sportivitas-6", "sportivitas-7", "sportivitas-8", "sportivitas-9"]],
+  ["gh", "Satu tim", "Foto bersama tim peserta di Sagara Futsal Arena", ["tim-1", "tim-2", "tim-3", "tim-4", "tim-5", "tim-6", "tim-7", "tim-8"]],
+  ["gn", "Sagara Futsal Arena", "Lapangan Sagara Futsal Arena di KEK Industropolis Batang", ["sagara-1", "sagara-3", "sagara-4", "sagara-6", "sagara-7"]],
+  ["gw", "Sagara Futsal Arena", "Lapangan Sagara Futsal Arena di KEK Industropolis Batang", ["sagara-2", "sagara-5"]],
+];
+const gallery = `<div class="gallery">${GALLERY.map(([kind, cap, alt, photos], gi) => `<figure class="${kind}" data-g="${gi}" aria-label="${cap}">${photos.map((f, i) => `<div class="slide${i === 0 ? " on" : ""}"><img class="fg" src="assets/foto/${f}.jpg" alt="${alt}" ${i <= 1 ? "" : 'loading="lazy" '}decoding="async"></div>`).join("")}<figcaption>${cap}</figcaption><button type="button" class="gzoom" aria-label="Perbesar foto ${cap}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button></figure>`).join("")}</div>`;
+const GALLERY_EVERY = 5; // detik per foto; tiap kotak mulai bergeser 1 detik supaya tidak berganti bersamaan
+let galleryTick = 0;
+function galleryGo(fig, to) {
+  const slides = [...fig.querySelectorAll(".slide")];
+  const n = slides.length;
+  if (n < 2) return;
+  const cur = Math.max(0, slides.findIndex((sl) => sl.classList.contains("on")));
+  const next = (((to === undefined ? cur + 1 : to) % n) + n) % n;
+  slides.forEach((sl, k) => sl.classList.toggle("on", k === next));
+  const nx = slides[(next + 1) % n].querySelector(".fg");
+  if (nx) nx.loading = "eager"; // siapkan foto berikutnya supaya fade tidak kosong
+}
+setInterval(() => {
+  if (document.visibilityState !== "visible" || document.body.classList.contains("lb-open")) return;
+  galleryTick++;
+  document.querySelectorAll(".gallery figure").forEach((fig, i) => {
+    if ((galleryTick + i) % GALLERY_EVERY !== 0) return;
+    if (fig.matches(":hover") || Date.now() - (+fig.dataset.hold || 0) < 8000) return;
+    galleryGo(fig);
+  });
+}, 1000);
+let galleryTouch = null;
+document.addEventListener("touchstart", (e) => {
+  const fig = e.target.closest?.(".gallery figure");
+  galleryTouch = fig ? { fig, x: e.touches[0].clientX } : null;
+}, { passive: true });
+document.addEventListener("touchend", (e) => {
+  if (!galleryTouch) return;
+  const dx = e.changedTouches[0].clientX - galleryTouch.x;
+  if (Math.abs(dx) > 40) {
+    const fig = galleryTouch.fig;
+    fig.dataset.hold = Date.now();
+    const cur = [...fig.querySelectorAll(".slide")].findIndex((sl) => sl.classList.contains("on"));
+    galleryGo(fig, cur + (dx < 0 ? 1 : -1));
+  }
+  galleryTouch = null;
+}, { passive: true });
+// Lightbox galeri: klik foto untuk memperbesar. Responsif (HP sampai monitor lebar), ada tombol silang, panah, geser, dan keyboard.
+function openGalleryLightbox(gi, start) {
+  const g = GALLERY[gi];
+  if (!g) return;
+  const [, cap, alt, photos] = g;
+  const n = photos.length;
+  let cur = Math.min(Math.max(start | 0, 0), n - 1);
+  const prevFocus = document.activeElement;
+  const lb = document.createElement("div");
+  lb.className = "glb";
+  lb.setAttribute("role", "dialog");
+  lb.setAttribute("aria-modal", "true");
+  lb.setAttribute("aria-label", cap);
+  const ico = (d) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  lb.innerHTML = `<div class="glb-top"><div class="glb-title"><b>${cap}</b><span class="glb-count"></span></div><button type="button" class="glb-x" aria-label="Tutup">${ico('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>`
+    + `<div class="glb-stage"><img class="glb-img" alt="">${n > 1 ? `<button type="button" class="glb-nav prev" aria-label="Foto sebelumnya">${ico('<path d="M15 5l-7 7 7 7"/>')}</button><button type="button" class="glb-nav next" aria-label="Foto berikutnya">${ico('<path d="M9 5l7 7-7 7"/>')}</button>` : ""}</div>`
+    + (n > 1 ? `<div class="glb-thumbs">${photos.map((f, i) => `<button type="button" data-i="${i}" aria-label="Foto ${i + 1}"><img src="assets/foto/t/${f}.jpg" alt="" loading="lazy" decoding="async"></button>`).join("")}</div>` : "");
+  document.body.appendChild(lb);
+  document.body.classList.add("lb-open");
+  const img = lb.querySelector(".glb-img");
+  const count = lb.querySelector(".glb-count");
+  const thumbs = [...lb.querySelectorAll(".glb-thumbs button")];
+  const show = (i) => {
+    cur = ((i % n) + n) % n;
+    img.classList.add("out");
+    const src = `assets/foto/hd/${photos[cur]}.jpg`; // versi HD untuk tampilan zoom
+    const done = () => img.classList.remove("out");
+    img.onload = done; img.onerror = done;
+    img.src = src;
+    if (img.complete) done();
+    img.alt = `${alt} (${cur + 1} dari ${n})`;
+    count.textContent = n > 1 ? `${cur + 1} / ${n}` : "";
+    thumbs.forEach((t, k) => { t.classList.toggle("on", k === cur); if (k === cur) t.scrollIntoView({ block: "nearest", inline: "center" }); });
+    [cur + 1, cur - 1].forEach((k) => { const nb = photos[((k % n) + n) % n]; if (nb) new Image().src = `assets/foto/hd/${nb}.jpg`; });
+  };
+  const close = () => {
+    document.removeEventListener("keydown", onKey, true);
+    lb.remove();
+    document.body.classList.remove("lb-open");
+    const fig = document.querySelector(`.gallery figure[data-g="${gi}"]`);
+    if (fig) { fig.dataset.hold = Date.now(); galleryGo(fig, cur); }
+    if (prevFocus && prevFocus.isConnected) prevFocus.focus();
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") { e.preventDefault(); close(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); show(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); show(cur - 1); }
+    else if (e.key === "Tab") {
+      const f = [...lb.querySelectorAll("button")];
+      const i = f.indexOf(document.activeElement);
+      e.preventDefault();
+      f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+    }
+  };
+  document.addEventListener("keydown", onKey, true);
+  lb.addEventListener("click", (e) => {
+    if (e.target.closest(".glb-x") || e.target.classList.contains("glb-stage")) return close();
+    if (e.target.closest(".glb-nav.next")) return show(cur + 1);
+    if (e.target.closest(".glb-nav.prev")) return show(cur - 1);
+    const t = e.target.closest(".glb-thumbs button");
+    if (t) show(+t.dataset.i);
+  });
+  let sx = null, sy = null;
+  const stage = lb.querySelector(".glb-stage");
+  stage.addEventListener("touchstart", (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  stage.addEventListener("touchend", (e) => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    sx = sy = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) show(cur + (dx < 0 ? 1 : -1));
+    else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close(); // geser ke bawah = tutup
+  }, { passive: true });
+  show(cur);
+  lb.querySelector(".glb-x").focus();
+}
+document.addEventListener("click", (e) => {
+  const fig = e.target.closest?.(".gallery figure");
+  if (!fig) return;
+  const cur = [...fig.querySelectorAll(".slide")].findIndex((sl) => sl.classList.contains("on"));
+  openGalleryLightbox(+fig.dataset.g, Math.max(cur, 0));
+});
 
 // Bilah atas (HTML statis di index.html) mengikuti TOURNAMENT supaya nama cukup diubah di util.js
 document.querySelectorAll(".brand-t b").forEach((el) => { el.textContent = TOURNAMENT.line1; });
@@ -243,7 +362,6 @@ function homeView() {
   h += `<div class="sheet">${homeGroup ? standingsTable(standings[homeGroup], QUALIFY_PER_GROUP, groupDone(homeGroup)) : `<p class="empty">Klasemen tampil setelah tim dan grup dibuat.</p>`}</div>${homeGroup ? standingNote() : ""}`;
   h += `<div class="head"><h2>Statistik pemain</h2><a href="#/statistik">Selengkapnya</a></div>${statTiles(stats)}`;
   h += "</div></div>";
-  h += `<div class="head"><h2>Info turnamen</h2></div><div id="bn-slot"></div>`;
   h += `<div class="head"><h2>Suasana turnamen</h2></div>${gallery}`;
   h += `<div class="head"><h2>Penyelenggara</h2></div>${sponsors}${footer}`;
   return h;
@@ -625,132 +743,6 @@ function matchView(r) {
   return `<a class="back" href="#/">← Kembali</a>${head}${suspBox}${tabs}${body}${motm}`;
 }
 
-// ---------- Banner geser (otomatis + bisa digeser) ----------
-/** Video tanpa suara, berulang. Pengunjung yang meminta gerak dikurangi hanya melihat gambar pembuka. */
-function mediaVideo(b, controls, forcePlay = false) {
-  const play = forcePlay || controls || !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  return `<video class="bn-video" src="${b.video}" poster="${b.src}" width="1920" height="912" muted loop playsinline preload="${play ? "auto" : "none"}" ${play ? "autoplay" : ""} ${controls ? "controls" : ""} aria-label="${esc(b.alt)}"></video>`;
-}
-const BANNERS = [
-  { video: "assets/promo.mp4", src: "assets/promo-poster.jpg", tvVideo: "assets/promo-tv-1.mp4", tvSrc: "assets/promo-tv-1-poster.jpg", dur: 8, title: "Video Industropolis Batang Futsal League", alt: "Video pembuka Industropolis Batang Futsal League: 16 team, league system, 31 match, November sampai Desember 2026, khusus karyawan tenant Industropolis Batang" },
-  { video: "assets/promo-banner-2.mp4", src: "assets/promo-banner-2.jpg", tvVideo: "assets/promo-tv-2.mp4", tvSrc: "assets/promo-tv-2-poster.jpg", dur: 15, title: "Jadwal babak grup", alt: "Video jadwal babak grup: Matchday 1 sampai 3 pada 20, 26, dan 27 November, sesi 1 Grup A dan B, sesi 2 Grup C dan D, pukul 18.00 sampai 21.20 WIB, beserta susunan laga" },
-  { video: "assets/promo-banner-3.mp4", src: "assets/promo-banner-3.jpg", tvVideo: "assets/promo-tv-3.mp4", tvSrc: "assets/promo-tv-3-poster.jpg", dur: 15, title: "Bagan babak gugur", alt: "Video bagan babak gugur 3 sampai 4 Desember: perempat final, semifinal, dan final" },
-];
-const BN = { idx: 0, hold: 0, hover: false, at: Date.now() };
-const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-let bannerEl = null;
-const bnTrack = () => bannerEl?.querySelector(".bn-track");
-
-function bnSync() {
-  if (!bannerEl) return;
-  BN.at = Date.now();
-  bannerEl.querySelectorAll(".bn-slide video").forEach((v, i) => { // hanya slide yang tampil yang diputar, mulai dari awal
-    if (i === BN.idx) { if (v.paused || v.dataset.on !== "1") { try { v.currentTime = 0; } catch {} v.play?.().catch(() => {}); } v.dataset.on = "1"; }
-    else { v.pause?.(); v.dataset.on = "0"; }
-  });
-  bannerEl.querySelectorAll(".bn-dots button").forEach((d, i) => {
-    d.classList.toggle("on", i === BN.idx);
-    d.setAttribute("aria-current", String(i === BN.idx));
-  });
-  bannerEl.querySelector(".bn-cap").textContent = `${BN.idx + 1}/${BANNERS.length} · ${BANNERS[BN.idx].title}`;
-}
-function bnGo(i, smooth = true) {
-  const t = bnTrack();
-  if (!t) return;
-  BN.idx = (i + BANNERS.length) % BANNERS.length;
-  t.scrollTo({ left: BN.idx * t.clientWidth, behavior: smooth && !reduceMotion.matches ? "smooth" : "auto" });
-  bnSync();
-}
-function buildBanner() {
-  const el = document.createElement("section");
-  el.className = "bn";
-  el.setAttribute("aria-roledescription", "carousel");
-  el.setAttribute("aria-label", "Informasi turnamen");
-  el.innerHTML = `<div class="bn-view">
-    <div class="bn-track" tabindex="0" aria-label="Geser untuk melihat info lainnya">${BANNERS.map((b, i) =>
-      `<figure class="bn-slide" role="group" aria-roledescription="slide" aria-label="${i + 1} dari ${BANNERS.length}">${b.video ? mediaVideo(b, false) : `<img src="${b.src}" alt="${esc(b.alt)}" width="1200" height="570" draggable="false">`}</figure>`).join("")}</div>
-    <button type="button" class="bn-arrow prev" data-bn="prev" aria-label="Slide sebelumnya"></button>
-    <button type="button" class="bn-arrow next" data-bn="next" aria-label="Slide berikutnya"></button>
-  </div>
-  <div class="bn-foot"><span class="bn-cap"></span><div class="bn-dots">${BANNERS.map((_, i) => `<button type="button" data-bn="${i}" aria-label="Slide ${i + 1}"></button>`).join("")}</div></div>
-  <p class="bn-tip">Ketuk gambar untuk memperbesar.</p>`;
-  bannerEl = el;
-  const t = bnTrack();
-  let timer;
-  t.addEventListener("scroll", () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      if (!t.clientWidth) return; // sedang terlepas dari halaman
-      const i = Math.min(BANNERS.length - 1, Math.round(t.scrollLeft / t.clientWidth));
-      if (i !== BN.idx) { BN.idx = i; bnSync(); }
-    }, 60);
-  }, { passive: true });
-  // pengunjung menyentuh / menggeser / memakai keyboard: jeda putar otomatis 10 detik
-  ["pointerdown", "touchstart", "wheel", "keydown", "focusin"].forEach((ev) => el.addEventListener(ev, () => { BN.hold = Date.now() + 10000; }, { passive: true }));
-  el.addEventListener("mouseenter", () => { BN.hover = true; });
-  el.addEventListener("mouseleave", () => { BN.hover = false; });
-  t.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight") { e.preventDefault(); bnGo(BN.idx + 1); }
-    if (e.key === "ArrowLeft") { e.preventDefault(); bnGo(BN.idx - 1); }
-  });
-  bnSync();
-}
-/** Banner disimpan di memori dan dipasang ulang tiap beranda dirender, jadi posisi geser tidak hilang saat skor berubah. */
-function mountBanner() {
-  const slot = $app.querySelector("#bn-slot");
-  if (!slot) return;
-  if (!bannerEl) buildBanner();
-  slot.replaceWith(bannerEl);
-  const t = bnTrack();
-  t.scrollLeft = BN.idx * t.clientWidth;
-}
-setInterval(() => {
-  if (!bannerEl || !bannerEl.isConnected || reduceMotion.matches || document.hidden || BN.hover || Date.now() < BN.hold) return;
-  const r = bannerEl.getBoundingClientRect();
-  if (r.bottom < 0 || r.top > window.innerHeight) return;
-  if (BANNERS[BN.idx].video && Date.now() - BN.at < ((BANNERS[BN.idx].dur || 8) + 1.5) * 1000) return; // biarkan video selesai satu putaran
-  bnGo(BN.idx + 1);
-}, 5000);
-window.addEventListener("resize", () => { if (bannerEl?.isConnected) bnGo(BN.idx, false); });
-
-function openLightbox(i) {
-  const b = BANNERS[i];
-  if (!b) return;
-  const prev = document.activeElement;
-  const lb = document.createElement("div");
-  lb.className = "lb";
-  lb.setAttribute("role", "dialog");
-  lb.setAttribute("aria-modal", "true");
-  lb.setAttribute("aria-label", b.title);
-  lb.innerHTML = `<button type="button" class="lb-x">Tutup ✕</button><div class="lb-scroll">${b.video ? mediaVideo(b, false, true) : `<img src="${b.src}" alt="${esc(b.alt)}">`}</div>`;
-  document.body.appendChild(lb);
-  document.body.classList.add("lb-open");
-  const close = () => {
-    document.removeEventListener("keydown", onKey, true);
-    lb.remove();
-    document.body.classList.remove("lb-open");
-    if (prev && prev.isConnected) prev.focus();
-  };
-  const onKey = (e) => {
-    if (e.key === "Escape") { e.preventDefault(); close(); }
-    if (e.key === "Tab") { e.preventDefault(); lb.querySelector(".lb-x").focus(); }
-  };
-  document.addEventListener("keydown", onKey, true);
-  lb.addEventListener("click", (e) => { if (e.target.closest(".lb-x") || e.target === lb || e.target.classList.contains("lb-scroll")) close(); });
-  lb.querySelector(".lb-x").focus();
-}
-document.addEventListener("click", (e) => {
-  const c = e.target.closest("[data-bn]");
-  if (c) {
-    BN.hold = Date.now() + 10000;
-    const v = c.dataset.bn;
-    bnGo(v === "next" ? BN.idx + 1 : v === "prev" ? BN.idx - 1 : Number(v));
-    return;
-  }
-  const sl = e.target.closest(".bn-slide");
-  if (sl) openLightbox([...sl.parentNode.children].indexOf(sl));
-});
-
 // ---------- Render ----------
 function renderNav(name) {
   const active = name === "laga" ? "jadwal" : name === "pemain" ? "tim" : name;
@@ -803,17 +795,11 @@ function render() {
   const r = route();
   renderNav(r.name);
   $app.dataset.view = r.name;
-  document.body.classList.toggle("tv-mode", r.name === "tv");
-  tvWake(r.name === "tv");
-  tvSoundHint(r.name === "tv");
-  if (r.name === "tv") tvWarm();
   if (isReady()) {
     const b = computeBracket(state.teams, state.matches, state.events);
     slotByMatch = new Map([...b.qf, ...b.sf, b.final].filter((x) => x.match).map((x) => [x.match.id, x]));
   }
 
-  if (isReady()) tvCheckGoals(r.name === "tv");
-  if (r.name !== "tv") document.querySelector(".goalfx")?.remove();
   let html;
   if (state.error && !isReady()) {
     html = `<div class="error-box">Data belum bisa dimuat (${esc(state.error.code || state.error.message)}). Coba muat ulang halaman beberapa saat lagi.</div>`;
@@ -829,7 +815,6 @@ function render() {
       case "pemain": html = playerProfileView(r.id); break;
       case "juara": html = juaraView(); break;
       case "laga": html = matchView(r); break;
-      case "tv": html = tvView(); break;
       default: html = homeView();
     }
   }
@@ -837,9 +822,6 @@ function render() {
   if (html !== lastHtml || key !== lastKey) {
     const routeChanged = key !== lastKey;
     $app.innerHTML = html;
-    mountBanner();
-    if (r.name === "tv") setTimeout(() => $app.querySelector(".tv-fullvideo video")?.classList.add("ready"), 2500); // jaga-jaga bila peristiwa "playing" tidak datang
-    if (tvEnter && r.name === "tv") { $app.querySelector(".tv")?.classList.add("tv-in"); tvEnter = false; }
     if (routeChanged) { window.scrollTo(0, 0); scrolledJadwal = false; }
     lastHtml = html; lastKey = key;
   }
@@ -848,7 +830,7 @@ function render() {
     const el = document.getElementById("today-anchor");
     if (el) setTimeout(() => el.scrollIntoView({ block: "start" }), 0);
   }
-  const titles = { home: "", jadwal: "Jadwal · ", klasemen: "Klasemen · ", bagan: "Bagan · ", statistik: "Statistik · ", tim: "Tim · ", laga: "Pertandingan · ", tv: "Layar TV · " };
+  const titles = { home: "", jadwal: "Jadwal · ", klasemen: "Klasemen · ", bagan: "Bagan · ", statistik: "Statistik · ", tim: "Tim · ", laga: "Pertandingan · " };
   document.title = (titles[r.name] ?? "") + TOURNAMENT.name;
 }
 
@@ -872,335 +854,6 @@ document.addEventListener("click", (e) => {
   lastHtml = ""; render();
 });
 
-
-// ---------- Layar TV / proyektor (#/tv) ----------
-// Tanpa menu, huruf besar, skor + jam + kejadian terbaru. Beberapa laga live: bergantian tiap 15 detik.
-let tvIdx = 0, tvHtIdx = 0;
-const tvTop = (label) => `<header class="tv-top"><span class="tv-brand"><img src="assets/logo.png" alt="" data-sitelogo><span class="tv-brand-t"><b>${esc(TOURNAMENT.line1.toUpperCase())}</b><i>${esc(TOURNAMENT.line2.toUpperCase())}</i></span></span><span class="tv-label">${label}</span>${rtClockHtml("tvc")}</header>`;
-const tvSponsors = `<footer class="tv-sponsors"><img src="assets/logo-industropolis.png" alt="Industropolis Batang"><i></i><img src="assets/logo-sez.png" alt="Indonesia SEZ"><i></i><img src="assets/logo-danantara.png" alt="Danantara Indonesia"></footer>`;
-// Gol di TV (gaya papan skor Google): gol tim A di kiri, tim B di kanan, ikon bola di tengah.
-// Kartu, kiper, dan kejadian lain tidak tampil di TV; lengkapnya ada di Ringkasan laga.
-const tvBall = ballSvg();
-function tvGoals(m) {
-  const gs = state.events.filter((e) => e.matchId === m.id && (e.type === "goal" || e.type === "own_goal")).sort(evSort);
-  if (!gs.length) return `<p class="tv-empty">Belum ada gol.</p>`;
-  const col = (side) => groupGoals(gs.filter((e) => eventSide(m, e) === side));
-  const A = col("a"), B = col("b");
-  const list = (groups) => groups.map((g) => `<p>${esc(pName(g[0].playerId))} <b>${g.map((e) => eventMinute(e) + (e.pen ? ' <i class="tg">P</i>' : "")).join(", ")}</b>${g[0].type === "own_goal" ? ' <i class="tg og">OG</i>' : ""}</p>`).join("");
-  const n = Math.max(A.length, B.length);
-  return `<div class="tv-goals ${n > 5 ? "xs" : n > 3 ? "sm" : ""}"><div class="tvg-a">${list(A)}</div><div class="tvg-ic">${tvBall}</div><div class="tvg-b">${list(B)}</div></div>`;
-}
-const tvCards = (m, side) => {
-  if (m.status === "scheduled") return "";
-  const t = cardTotals(state.events, m.id, side === "A" ? m.teamA : m.teamB);
-  return `<div class="tv-cards" aria-label="Total kartu"><span><i class="ico yc"></i>${t.y}</span><span><i class="ico rc"></i>${t.r}</span></div>`;
-};
-const tvTeam = (m, side) => `<div class="tv-team">${badge(state.teamById[side === "A" ? m.teamA : m.teamB], false, "lg")}<b>${esc(sideName(m, side))}</b>${tvCards(m, side)}</div>`;
-// Line up untuk layar TV: inti (kiper di atas), cadangan satu baris. Null bila salah satu tim belum diisi.
-const tvLuReady = (m) => (m.lineupA?.starters || []).length && (m.lineupB?.starters || []).length;
-function tvLineup(m) {
-  const col = (side) => {
-    const lu = m["lineup" + side] || {};
-    const ps = (ids) => ids.map((id) => state.playerById[id]).filter(Boolean);
-    const st = ps(lu.starters || []).sort((a, b) => (b.isGK ? 1 : 0) - (a.isGK ? 1 : 0) || (a.number ?? 999) - (b.number ?? 999));
-    const sb = ps(lu.subs || []).sort((a, b) => (a.number ?? 999) - (b.number ?? 999));
-    const sp = [...suspendedIn(m, side === "A" ? m.teamA : m.teamB, state.matches, state.events, state.players, state.settings.suspOverrides || {}).keys()].map((id) => state.playerById[id]).filter(Boolean);
-    return `<div class="tv-lucol"><h3>${esc(sideName(m, side))}</h3>
-      ${st.map((p) => `<div class="tv-lu"><span class="no">${p.number ?? ""}</span><span class="nm">${esc(p.name)}</span>${p.isGK ? '<span class="gk">GK</span>' : ""}${p.isCaptain ? '<span class="gk cap">C</span>' : ""}</div>`).join("")}
-      ${sp.length ? `<p class="tv-sub tv-susp">Skorsing: ${sp.map((x) => `${x.number ?? ""} ${esc(x.name)}`).join(" · ")}</p>` : ""}
-      ${sb.length ? `<p class="tv-sub">Cadangan: ${sb.map((p) => `${p.number ?? ""} ${esc(p.name)}`).join(" · ")}</p>` : ""}</div>`;
-  };
-  return `<h3 class="tv-h">Line up</h3><div class="tv-lu2">${col("A")}${col("B")}</div>`;
-}
-let tvPane = 0; // nomor bagian bawah layar; naik tiap 15 detik (sama dengan durasi video TV) saat tidak ada laga live
-const tvRows = (title, rows) => `<h3 class="tv-h">${title}</h3>${rows}`;
-const tvSchedule = (list) => tvRows("Jadwal berikutnya", list.map((m) => `<div class="tv-row"><span class="tv-when">${m.kickoff ? `${esc(dayLong(m.kickoff).replace(/\s\d{4}$/, ""))}, ${esc(timeStr(m.kickoff))}` : "Waktu akan ditentukan"}</span><span class="tv-teams">${vt(m, "A")} <i>vs</i> ${vt(m, "B")}</span><span class="tv-grp">${matchLabel(m)}</span></div>`).join(""));
-const tvResults = (list) => tvRows("Hasil terakhir", list.map((m) => `<div class="tv-row"><span class="tv-when">${matchLabel(m)}</span><span class="tv-teams">${vt(m, "A")} <b>${scoreText(m)}</b> ${vt(m, "B")}${penNote(m)}</span></div>`).join(""));
-function tvStats(stats) {
-  const col = (title, key) => {
-    const l = topBy(stats, key, 3);
-    return `<div class="tv-statcol"><h3>${title}</h3>${l.length ? l.map((p) => `<div class="tv-pl"><span>${esc(p.name)} <small>${esc(state.teamById[p.teamId]?.name || "")}</small></span><b>${p[key]}</b></div>`).join("") : `<p class="tv-sub">Belum ada.</p>`}</div>`;
-  };
-  const gk = state.playerById[state.settings.bestGkId];
-  return `<h3 class="tv-h">Statistik</h3><div class="tv-lu2">${col("Top scorer", "goals")}${col("Top assist", "assists")}</div>${gk ? `<p class="tv-sub">Kiper terbaik: ${esc(gk.name)} (${esc(state.teamById[gk.teamId]?.name || "")})</p>` : ""}`;
-}
-// Ubah ke true bila layar TV saat tidak ada laga live hanya boleh memutar 3 video (tanpa line up, klasemen, jadwal, hasil, statistik).
-const TV_VIDEO_ONLY = false;
-// Bagian bawah layar saat tidak ada laga live: line up, klasemen tiap grup, jadwal, hasil, statistik, dan banner, bergantian.
-function tvPaneList(next) {
-  const ms = state.matches, std = computeStandings(state.teams, ms, state.events);
-  const groups = Object.keys(std).filter((g) => g && std[g]?.length).sort((a, b) => a.localeCompare(b)); // urut A, B, C, D
-  // klasemen semua grup digabung dalam satu layar (2 x 2)
-  const gp = groups.length ? [() => tvRows("Klasemen", `<div class="tv-std4">${groups.map((g) => `<div class="tv-std"><h4>Grup ${esc(g)}</h4>${standingsTable(std[g], QUALIFY_PER_GROUP, groupDone(g))}</div>`).join("")}</div>`)] : [];
-  const upcoming = ms.filter((m) => m.status === "scheduled").sort(sortByKickoff).slice(0, 5);
-  const done = ms.filter((m) => m.status === "ft").sort((a, b) => sortByKickoff(b, a)).slice(0, 4);
-  const stats = computePlayerStats(state.players, state.events, state.teams, state.matches);
-  const hasStats = topBy(stats, "goals", 1).length || topBy(stats, "assists", 1).length;
-  // video TV: tampil satu layar penuh (tanpa header, hitung mundur, atau logo sponsor tambahan; logo sudah ada di dalam video)
-  const vp = BANNERS.filter((b) => b.tvVideo).map((b) => { const f = () => `<video src="${b.tvVideo}" poster="${b.tvSrc || b.src}" muted autoplay playsinline preload="auto"${b.tvFit === "cover" ? ' class="cover"' : ""}></video>`; f.full = true; f.dur = (b.dur || 15) + 0.2; return f; }); // tanpa loop: di akhir video berhenti di bingkai terakhir lalu memudar ke jeda kosong, tidak mengulang dari awal
-  const dataPanes = [
-    next && tvLuReady(next) ? () => tvLineup(next) : null,
-    ...gp, // satu layar klasemen untuk semua grup
-    upcoming.length ? () => tvSchedule(upcoming) : null,
-    hasStats ? () => tvStats(stats) : null, done.length ? () => tvResults(done) : null,
-  ].filter(Boolean);
-  if (TV_VIDEO_ONLY) return vp;
-  return [...dataPanes, ...vp]; // layar data dulu, 3 video berurutan di akhir (video pembuka 8 dtk, lalu 2 video acara 15 dtk)
-}
-const tvDots = (n) => n > 1 ? `<div class="tv-dots">${Array.from({ length: n }, (_, i) => `<i class="${i === tvPane % n ? "on" : ""}"></i>`).join("")}</div>` : "";
-function tvView() {
-  const ms = state.matches;
-  const live = ms.filter((m) => m.status === "live" && !m.correcting).sort(sortByKickoff); // laga yang dibuka admin untuk koreksi tidak tampil di TV
-  const next = ms.filter((m) => m.status === "scheduled").sort(sortByKickoff)[0];
-  const last = ms.filter((m) => m.status === "ft").sort((a, b) => sortByKickoff(b, a))[0];
-
-  if (live.length) {
-    const m = live[tvIdx % live.length];
-    const so = shootout(m).any && (m.scoreA ?? 0) === (m.scoreB ?? 0) ? `<div class="tv-note">Adu penalti ${penScoreText(m)}</div>` : "";
-    // Saat istirahat: ada keterangan hitung mundur, dan bagian bawah bergantian (gol, jadwal berikutnya, top scorer) supaya tidak diam 5 menit.
-    const ph = phaseOf(m), brk = ph === "ht" || ph === "etb";
-    const brkLabel = brk ? `<div class="tv-brk">${ph === "ht" ? "Babak 2 dimulai dalam" : "Perpanjangan waktu dimulai dalam"}</div>` : "";
-    let feedHtml = tvGoals(m);
-    if (brk) {
-      const upc = ms.filter((x) => x.status === "scheduled").sort(sortByKickoff).slice(0, 3);
-      const st = computePlayerStats(state.players, state.events, state.teams, state.matches);
-      const panes = [() => tvGoals(m), upc.length ? () => tvSchedule(upc) : null, topBy(st, "goals", 1).length ? () => tvStats(st) : null].filter(Boolean);
-      feedHtml = `<div class="tv-fade" data-k="${tvHtIdx % panes.length}">${panes[tvHtIdx % panes.length]()}</div>`;
-    }
-    return `<div class="tv">${tvTop(matchLabel(m))}
-      <section class="tv-main">${tvTeam(m, "A")}
-        <div class="tv-mid"><div class="tv-score">${scoreText(m)}</div>
-          ${brkLabel}<div class="tv-clock" data-clockbig="${esc(m.id)}">${esc(clockText(m))}</div>
-          <div class="tv-status">${statusPill(m)}</div>
-          ${addedText(m) ? `<div class="tv-note">${esc(addedText(m))}</div>` : ""}${so}</div>
-        ${tvTeam(m, "B")}</section>
-      <section class="tv-feed${brk ? " brk" : ""}">${feedHtml}
-        ${live.length > 1 ? `<div class="tv-dots">${live.map((_, i) => `<i class="${i === tvIdx % live.length ? "on" : ""}"></i>`).join("")}</div>` : ""}</section>${tvSponsors}</div>`;
-  }
-
-  if (next) {
-    const ko = toDate(next.kickoff)?.getTime();
-    const panes = tvPaneList(next), cur = panes.length ? panes[tvPane % panes.length] : null, feed = cur ? cur() : "";
-    tvCurDur = (cur?.dur || 15) * 1000;
-    if (cur?.full) return `<div class="tv tv-fullvideo">${feed}</div>`;
-    return `<div class="tv tv-next">${tvTop(`Laga berikutnya · ${matchLabel(next)}`)}
-      <section class="tv-main">${tvTeam(next, "A")}
-        <div class="tv-mid"><div class="tv-score vs">vs</div>
-          <div class="tv-clock">${ko ? `<span data-tvcount="${ko}">${tvCountText(ko)}</span>` : ""}</div>
-          <div class="tv-note">${next.kickoff ? `${esc(dayLong(next.kickoff))}, ${esc(timeStr(next.kickoff))} WIB` : "Waktu akan ditentukan"}</div></div>
-        ${tvTeam(next, "B")}</section>
-      <section class="tv-feed">${feed}${tvDots(panes.length)}</section>${tvSponsors}</div>`;
-  }
-
-  const ip = tvPaneList(null), icur = ip.length ? ip[tvPane % ip.length] : null, ifeed = icur ? icur() : "";
-  tvCurDur = (icur?.dur || 15) * 1000;
-  if (icur?.full) return `<div class="tv tv-fullvideo">${ifeed}</div>`;
-  return `<div class="tv tv-idle">${tvTop("")}<section class="tv-main tv-solo"><div><h1>${esc(TOURNAMENT.name)}</h1>
-    <p class="tv-note">${last ? `Hasil terakhir: ${esc(sideName(last, "A"))} ${scoreText(last)} ${esc(sideName(last, "B"))}` : `${dateRange}, ${esc(TOURNAMENT.venue)}`}</p></div></section><section class="tv-feed">${ifeed}${tvDots(ip.length)}</section>${tvSponsors}</div>`;
-}
-
-// ---------- Animasi gol di layar TV ----------
-// Gol yang sudah ada saat halaman TV dibuka tidak dianimasikan; hanya gol baru (maks 90 dtk lalu) di laga LIVE.
-const seenGoals = new Set();
-let goalsSeeded = false, goalFxTimer = 0;
-// Animasi gol: hanya tulisan "GOOOL!" + pencetak gol + skor, durasinya mengikuti panjang gol.mp3.
-// Tulisan baru muncul saat suara benar-benar mulai terputar (promise play), lalu memudar bersama suara.
-function tvGoalFx(e, m) {
-  document.querySelector(".goalfx")?.remove();
-  clearTimeout(goalFxTimer);
-  const side = e && m ? eventSide(m, e) : null; // gol bunuh diri dihitung untuk tim lawan
-  const team = side === "a" ? sideName(m, "A") : side === "b" ? sideName(m, "B") : "";
-  const tag = e?.type === "own_goal" ? '<i class="tg og">OG</i>' : e?.pen ? '<i class="tg">P</i>' : "";
-  const who = e ? `<div class="gol-who">${esc(pName(e.playerId))} <b>${esc(eventMinute(e))}</b>${tag}</div>` : "";
-  const score = m ? `<div class="gol-score"><span>${esc(sideName(m, "A"))}</span><b>${esc(scoreText(m))}</b><span>${esc(sideName(m, "B"))}</span></div>` : "";
-  tvGoalSound().then((sec) => {
-    if (route().name !== "tv") return;
-    const total = Math.max(3.5, sec || 5); // detik; tanpa suara dipakai 5 dtk
-    const el = document.createElement("div");
-    el.className = "goalfx gol";
-    el.style.setProperty("--gd", total + "s");
-    el.setAttribute("role", "status");
-    el.setAttribute("aria-label", "Gol");
-    el.innerHTML = `<div class="gol-flash"></div><i class="gol-ring"></i><i class="gol-ring r2"></i><i class="gol-ring r3"></i>
-      <div class="gol-wrap"><div class="gol-word">${[..."GOOOL!"].map((c, i) => `<span style="--i:${i}">${c}</span>`).join("")}</div>
-        ${who}${team ? `<div class="gol-team">${esc(team)}</div>` : ""}${score}</div>`;
-    document.querySelector(".goalfx")?.remove();
-    document.body.appendChild(el);
-    goalFxTimer = setTimeout(() => el.remove(), total * 1000 + 200);
-  });
-}
-
-// ---------- Suara gol ----------
-// Bila ada file assets/gol.mp3 (rekaman "GOOOLL!" + sorak penonton), file itu yang diputar.
-// Bila tidak ada, dibuat suara sorak + klakson + ucapan "Gooool" lewat peramban.
-// Peramban hanya mengizinkan suara setelah layar diketuk / ditekan tombol sekali; tombol kecil di pojok TV mengingatkan.
-// File dibuat hanya saat layar TV dibuka (pengunjung biasa tidak ikut mengunduh gol.mp3).
-let goalMp3 = null, actx = null, sndReady = false;
-const getMp3 = () => goalMp3 || (goalMp3 = Object.assign(new Audio("assets/gol.mp3"), { preload: "auto", volume: 1 }));
-function tvSoundUnlock() {
-  if (sndReady) return;
-  sndReady = true;
-  document.querySelector(".tv-snd")?.remove();
-  try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    actx.resume?.();
-    try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch {}
-    const m = getMp3(); // putar senyap sekali di dalam ketukan supaya peramban mengizinkan suara berikutnya
-    m.muted = true;
-    m.play().then(() => { m.pause(); m.currentTime = 0; m.muted = false; }).catch(() => { m.muted = false; });
-  } catch { /* tanpa suara */ }
-}
-["pointerdown", "keydown", "touchstart"].forEach((t) => document.addEventListener(t, () => { if (route().name === "tv") tvSoundUnlock(); }, { passive: true }));
-function tvSoundHint(on) {
-  const old = document.querySelector(".tv-snd");
-  if (on) {
-    getMp3(); // mulai mengunduh gol.mp3 begitu layar TV dibuka
-    try { if (navigator.getAutoplayPolicy?.("mediaelement") === "allowed") sndReady = true; } catch {} // peramban sudah mengizinkan suara otomatis: tombol tidak perlu
-  }
-  if (!on || sndReady) { old?.remove(); return; }
-  if (old) return;
-  const b = document.createElement("button");
-  b.type = "button"; b.className = "tv-snd"; b.textContent = "🔊 Ketuk untuk aktifkan suara gol";
-  b.addEventListener("click", tvSoundUnlock);
-  document.body.appendChild(b);
-}
-// Selalu coba putar gol.mp3, tanpa menunggu ketukan: bila peramban memang mengizinkan suara otomatis
-// (mode kios, atau Setelan situs: Suara = Izinkan), langsung bunyi. Bila diblokir, tombol pengingat muncul lagi.
-function tvGoalSound() { // hasil: lama suara (detik); 0 bila diblokir peramban
-  const m = getMp3();
-  m.muted = false; m.currentTime = 0;
-  return m.play().then(() => {
-    if (!sndReady) { sndReady = true; document.querySelector(".tv-snd")?.remove(); }
-    return Number.isFinite(m.duration) && m.duration > 0 ? m.duration : 7;
-  }).catch((err) => {
-    if (err && err.name === "NotAllowedError") { sndReady = false; tvSoundHint(true); return 0; } // diblokir peramban: butuh ketukan
-    synthGoal(); // file hilang / rusak: pakai suara buatan
-    return 3.5;
-  });
-}
-function synthGoal() {
-  try {
-    if (!actx) return;
-    const t = actx.currentTime, out = actx.createGain();
-    out.gain.value = 0.9; out.connect(actx.destination);
-    // sorak penonton: derau yang naik lalu turun
-    const len = Math.floor(actx.sampleRate * 3.4), buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    const n = actx.createBufferSource(); n.buffer = buf;
-    const bp = actx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1300; bp.Q.value = 0.6;
-    const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.55, t + 0.5); g.gain.setValueAtTime(0.55, t + 1.6); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.3);
-    n.connect(bp); bp.connect(g); g.connect(out); n.start(t);
-    // klakson pendek
-    [415, 523].forEach((f) => {
-      const o = actx.createOscillator(), og = actx.createGain();
-      o.type = "sawtooth"; o.frequency.value = f;
-      og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.16, t + 0.05); og.gain.setValueAtTime(0.16, t + 0.7); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.95);
-      o.connect(og); og.connect(out); o.start(t); o.stop(t + 1);
-    });
-    // ucapan "Gooool"
-    const u = new SpeechSynthesisUtterance("Goooooool!");
-    u.lang = "id-ID"; u.rate = 0.7; u.pitch = 1.1; u.volume = 1;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
-  } catch { /* tanpa suara */ }
-}
-const ftSeen = new Map();
-const seenState = (m) => (m.status === "live" && m.correcting ? "corr" : m.status); // "corr" = dibuka untuk koreksi: gol dan FT-nya tidak dianimasikan di TV
-function tvFxShow(cls, html, ms) {
-  document.querySelector(".goalfx")?.remove();
-  const el = document.createElement("div");
-  el.className = "goalfx " + cls;
-  el.setAttribute("role", "status");
-  el.innerHTML = html;
-  document.body.appendChild(el);
-  clearTimeout(goalFxTimer);
-  goalFxTimer = setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 600); }, ms);
-}
-function tvFtFx(m) {
-  const a = m.scoreA ?? 0, b = m.scoreB ?? 0;
-  const so = shootout(m).any && a === b;
-  const win = a !== b ? sideName(m, a > b ? "A" : "B") : so && m.penWinner ? sideName(m, m.penWinner) : "";
-  tvFxShow("ftfx", `<div class="gfx-rays"></div><div class="gfx-txt ft"><div class="gfx-ftl">Pertandingan selesai</div>
-    <div class="gfx-ftrow"><span>${esc(sideName(m, "A"))}</span><b>${a} – ${b}</b><span>${esc(sideName(m, "B"))}</span></div>
-    ${so ? `<div class="gfx-team">Adu penalti ${penScoreText(m)}</div>` : ""}
-    <div class="gfx-who">${win ? `Pemenang: ${esc(win)}` : "Hasil seri"}</div></div>`, 9000);
-}
-function tvCheckGoals(onTv) {
-  const goals = state.events.filter((e) => e.type === "goal" || e.type === "own_goal");
-  if (!goalsSeeded) {
-    goals.forEach((x) => seenGoals.add(x.id));
-    state.matches.forEach((m) => ftSeen.set(m.id, seenState(m)));
-    goalsSeeded = true; return;
-  }
-  const fresh = goals.filter((x) => !seenGoals.has(x.id));
-  fresh.forEach((x) => seenGoals.add(x.id));
-  const justFt = state.matches.filter((m) => ftSeen.get(m.id) === "live" && m.status === "ft" && !m.wo);
-  state.matches.forEach((m) => ftSeen.set(m.id, seenState(m)));
-  if (!onTv) return;
-  const recent = (e) => nowMs() - (e.ts ?? nowMs()) < 90000;
-  if (justFt.length) { tvFtFx(justFt[0]); return; }
-  if (fresh.length) {
-    const e = fresh.sort(evSort).pop(), m = state.matchById[e.matchId];
-    if (m && m.status === "live" && !m.correcting && recent(e)) tvGoalFx(e, m);
-  }
-}
-
-// jam dinding, hitung mundur, dan putar laga live (tanpa render ulang)
-const tvCountText = (ko) => {
-  const s = Math.floor((ko - nowMs()) / 1000);
-  if (s <= 0) return "Segera dimulai";
-  const h = Math.floor(s / 3600), mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0"), ss = String(s % 60).padStart(2, "0");
-  if (h >= 24) return `${Math.floor(h / 24)} hari ${String(h % 24).padStart(2, "0")}:${mm}:${ss}`;
-  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-};
-setInterval(() => {
-  document.querySelectorAll("[data-tvcount]").forEach((el) => { el.textContent = tvCountText(Number(el.dataset.tvcount)); });
-}, 1000);
-// Pergantian layar TV: isi layar memudar keluar (jeda singkat di warna latar), lalu layar berikut memudar masuk.
-// Video baru baru ditampilkan setelah siap diputar, supaya tidak ada kedipan poster atau layar kosong.
-let tvWarmed = null, tvPaneAt = Date.now(), tvCurDur = 15000; // tvCurDur: lama layar yang sedang tampil (video mengikuti durasinya)
-setInterval(() => { // tanpa laga live: layar bawah berganti sesuai durasinya (data 15 dtk, video pembuka 8 dtk, video acara 15 dtk)
-  if (route().name !== "tv" || !isReady() || state.matches.some((m) => m.status === "live")) { tvPaneAt = Date.now(); return; }
-  if (Date.now() - tvPaneAt >= tvCurDur) { tvPaneAt = Date.now() + 5000; tvAdvance(); }
-}, 500);
-function tvWarm() { // muat video TV lebih awal agar langsung siap saat gilirannya
-  if (tvWarmed) return;
-  tvWarmed = BANNERS.filter((b) => b.tvVideo).map((b) => { const v = document.createElement("video"); v.muted = true; v.preload = "auto"; v.src = b.tvVideo; v.load(); return v; });
-}
-function tvAdvance() {
-  tvWarm();
-  const el = $app.querySelector(".tv");
-  const go = () => { if (route().name !== "tv") return; tvPane++; tvEnter = true; tvPaneAt = Date.now(); lastHtml = ""; render(); };
-  if (!el) return go();
-  el.classList.add("tv-out");
-  setTimeout(go, 950); // 0,55 dtk memudar keluar + jeda kosong singkat, baru layar berikut memudar masuk
-}
-document.addEventListener("loadeddata", (e) => { if (e.target.matches?.(".tv-fullvideo video")) e.target.classList.add("ready"); }, true);
-document.addEventListener("playing", (e) => { if (e.target.matches?.(".tv-fullvideo video")) e.target.classList.add("ready"); }, true);
-setInterval(() => {
-  if (route().name !== "tv" || !isReady()) return;
-  const liveN = state.matches.filter((m) => m.status === "live").length;
-  if (liveN > 1) { tvIdx++; lastHtml = ""; render(); }
-  
-}, 15000);
-setInterval(() => { // istirahat: ganti isi bagian bawah tiap 10 dtk
-  if (route().name !== "tv" || !isReady()) return;
-  const lv = state.matches.filter((m) => m.status === "live" && !m.correcting).sort(sortByKickoff);
-  const m = lv.length ? lv[tvIdx % lv.length] : null;
-  if (m && (phaseOf(m) === "ht" || phaseOf(m) === "etb")) { tvHtIdx++; lastHtml = ""; render(); }
-}, 10000);
-
-// layar tidak boleh mati saat dipakai sebagai papan skor; klik dua kali atau tekan F = layar penuh
-let wakeLock = null;
-async function tvWake(on) {
-  try {
-    if (on && !wakeLock && "wakeLock" in navigator) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); }
-    else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
-  } catch { wakeLock = null; }
-}
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && route().name === "tv") tvWake(true); });
-const tvFull = () => { if (document.fullscreenElement) document.exitFullscreen?.(); else document.documentElement.requestFullscreen?.(); };
-document.addEventListener("dblclick", () => { if (route().name === "tv") tvFull(); });
-document.addEventListener("keydown", (e) => { if ((e.key === "f" || e.key === "F") && route().name === "tv" && !e.ctrlKey && !e.metaKey) tvFull(); });
 
 // Jam LIVE bergerak tiap detik tanpa render ulang
 setInterval(() => {

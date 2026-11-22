@@ -2957,23 +2957,6 @@ details.imp-team[open] {
   }
 }
 
-.tvbtn {
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: 10px;
-  padding: 4px 11px;
-  border-radius: 999px;
-  background: var(--court);
-  color: #fff;
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-.tvbtn:hover {
-  background: var(--court-2);
-}
-
 .panel.warnbox {
   margin-bottom: 14px;
 }

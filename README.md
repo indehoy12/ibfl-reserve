@@ -1,6 +1,6 @@
 # Industropolis Batang Futsal League — Website
 
-Tema visual mengikuti **warna logo perisai**: biru logo (`#2080D9` dan `#1969B4`), emas (`#EDBE6D` dan `#DBB066`), putih, dan abu muda (`#EEEFEF`). Latar halaman putih; bilah atas, hero, layar TV, dan video berlatar biru tua dengan cahaya biru; aksen tombol, garis, dan penanda memakai emas. Merah hanya dipakai untuk penanda LIVE dan kartu merah. Warna ada di bagian `:root` pada `css/style.css` (website) dan `css/admin.css` (admin); nilainya dibuat sama. Variabel `--orange` dan kelas `.orange` namanya dipertahankan supaya kode tidak berubah, tetapi warnanya sekarang emas. Video promo dan poster diwarnai ulang dari versi oranye ke palet logo. Strip logo penyelenggara di dalam video, poster, dan `og-image.jpg` sudah memakai logo penyelenggara terbaru (kotak putih berisi tiga logo berlebar sama); bila logo penyelenggara diganti lagi, strip di file-file itu ikut perlu dibuat ulang karena menyatu dengan gambar/video.
+Tema visual mengikuti **warna logo perisai**: biru logo (`#2080D9` dan `#1969B4`), emas (`#EDBE6D` dan `#DBB066`), putih, dan abu muda (`#EEEFEF`). Latar halaman putih; bilah atas dan hero berlatar biru tua dengan cahaya biru; aksen tombol, garis, dan penanda memakai emas. Merah hanya dipakai untuk penanda LIVE dan kartu merah. Warna ada di bagian `:root` pada `css/style.css` (website) dan `css/admin.css` (admin); nilainya dibuat sama. Variabel `--orange` dan kelas `.orange` namanya dipertahankan supaya kode tidak berubah, tetapi warnanya sekarang emas. Strip logo penyelenggara di dalam video, poster, dan `og-image.jpg` sudah memakai logo penyelenggara terbaru (kotak putih berisi tiga logo berlebar sama); bila logo penyelenggara diganti lagi, strip di file-file itu ikut perlu dibuat ulang karena menyatu dengan gambar/video.
 
 Live score, jadwal, klasemen, line up, top scorer, top assist, dan kiper terbaik.
 
@@ -8,8 +8,8 @@ Live score, jadwal, klasemen, line up, top scorer, top assist, dan kiper terbaik
 Hosting: **Netlify** (situs statis, tanpa build). Database & login admin: **Firebase** (Firestore + Authentication).
 
 ## Mengganti nama turnamen dan info umum
-Buka `public/js/util.js`, bagian `TOURNAMENT` di paling atas: `name`, `line1`, `line2`, `short`, `tagline`, `venue`, `start`, `end`. Nilainya langsung dipakai di bilah atas, hero, layar TV, judul tab, dan footer.
-Yang diubah manual (tidak otomatis): judul dan deskripsi di bagian `<head>` pada `public/index.html` dan `public/admin/index.html` (untuk mesin pencari dan pratinjau tautan), serta tulisan yang sudah menyatu di gambar/video (`og-image.jpg`, `promo.mp4`, dan `promo-poster.jpg`; video jadwal dan bagan tidak memuat nama).
+Buka `public/js/util.js`, bagian `TOURNAMENT` di paling atas: `name`, `line1`, `line2`, `short`, `tagline`, `venue`, `start`, `end`. Nilainya langsung dipakai di bilah atas, hero, judul tab, dan footer.
+Yang diubah manual (tidak otomatis): judul dan deskripsi di bagian `<head>` pada `public/index.html` dan `public/admin/index.html` (untuk mesin pencari dan pratinjau tautan), serta tulisan yang sudah menyatu di gambar (`og-image.jpg`).
 
 ## Struktur folder
 
@@ -31,9 +31,6 @@ ifl-website/
    │   └─ util.js        hitungan klasemen, statistik, jam laga
    └─ assets/            ← GAMBAR YANG BOLEH KAMU GANTI
        ├─ logo.png (dipakai di situs) dan logo.svg (master vektor, untuk cetak/desain ulang)
-       ├─ promo.mp4 / promo-poster.jpg = video pembuka (8 dtk, 1920x912): slide 1 slider beranda, dan layar penuh di TV
-       ├─ promo-banner-2.mp4, promo-banner-3.mp4 (+ .jpg poster) = video 2 dan 3 slider beranda (15 dtk, 1920x912, rasio 2,1:1): jadwal & susunan laga babak grup, bagan babak gugur
-       ├─ promo-tv-2.mp4, promo-tv-3.mp4 (+ promo-tv-2-poster.jpg, promo-tv-3-poster.jpg) = isi yang sama untuk layar TV (15 dtk, 1920x1080, 16:9). Ganti dengan nama sama untuk video baru (H.264, tanpa suara)
        ├─ favicon.png, icon-192.png, apple-touch-icon.png, og-image.jpg   ikon tab, ikon layar HP, gambar pratinjau saat tautan dibagikan
        ├─ bg-arena.jpg         background jaring gawang + cahaya biru/oranye (sama seperti flyer)
        ├─ logo-industropolis.png  logo penyelenggara (sudah dipangkas rapat, tanpa ruang kosong, lebar 1400 px)
@@ -41,13 +38,9 @@ ifl-website/
        └─ logo-danantara.png      logo penyelenggara (sama)
 ```
 
-### Banner geser di beranda
-Muncul di antara statistik dan daftar penyelenggara. Isinya 3 video: video pembuka (8 dtk), jadwal babak grup (15 dtk), dan bagan babak gugur (15 dtk). Geser otomatis setelah video selesai, bisa digeser (HP) atau pakai panah/titik (desktop), dan bisa diketuk untuk diperbesar.
-Untuk mengganti isinya, timpa `promo.mp4`, `promo-banner-2.mp4`, atau `promo-banner-3.mp4` (dan poster `.jpg`-nya). Daftarnya ada di `BANNERS` pada `js/app.js`.
-
 ### Mengganti gambar
 Timpa file di `public/assets/` dengan **nama file yang sama**, lalu unggah ulang ke GitHub. Tidak perlu mengubah kode.
-Foto galeri (`assets/foto/`) sudah diperbesar 2x dan dipertajam; untuk hasil terbaik, ganti dengan foto asli beresolusi tinggi (lebar minimal 1600 px) dengan nama file yang sama.
+Foto galeri (`assets/foto/`) berupa 33 foto lapangan, tim, sportivitas, dan Sagara Futsal Arena yang sudah diperbaiki cahaya/warnanya. Tiap foto ada tiga ukuran: kotak galeri 2000 px (`assets/foto/`, JPEG kualitas 86), tampilan zoom HD 3000 px (`assets/foto/hd/`, kualitas 88), dan thumbnail kecil (`assets/foto/t/`). Kalau mengganti foto, ganti ketiga ukurannya dengan nama file yang sama. Galeri punya 6 kotak carousel otomatis yang bentuknya mengikuti arah foto (landscape atau potret, satu kotak hanya berisi foto dengan arah sama); daftar foto per kotak dan jenis kotaknya (`gw`, `gh`, `gn`) ada di array `GALLERY` di `js/app.js` (nama file `kategori-nomor.jpg`). Klik foto untuk memperbesar (lightbox dengan tombol silang, panah, geser, dan keyboard).
 Rekomendasi: logo format PNG latar transparan, lebar sekitar 600–1600 px.
 
 ### Logo tim
@@ -112,9 +105,7 @@ Admin → Pertandingan → Semua pertandingan → **Kelola** laga. Urutannya sen
 - **Pergantian pemain**: tidak dicatat (pemain cadangan bisa mencetak gol dan assist, jadi lengkapnya cukup di Ringkasan laga). Pemain di lapangan = susunan inti dikurangi yang kena kartu merah.
 - **Kiper**: tombol **Ganti kiper** hanya aktif bila tim punya kiper lain (pemain bertanda GK) di line up dan belum kena kartu merah. Tim dengan 1 kiper tidak bisa ganti kiper. Tombol **Power play** = main tanpa kiper (kiper terbang) dan **Akhiri power play** mengembalikan kiper. Setiap gol menyimpan `gkId` kiper yang kebobolan, jadi kebobolan dan clean sheet per kiper akurat; saat power play gol tidak dibebankan ke kiper mana pun. Ganti kiper dan power play tercatat di Ringkasan laga.
 - **Skorsing** (dihitung otomatis dari kartu, di `computeSuspensions` pada `util.js`): kartu merah = absen 1 laga berikutnya tim itu; 2 kartu kuning di laga berbeda = absen 1 laga lalu hitungan mulai dari nol; kuning babak grup dihapus saat babak gugur dimulai (ubah di `SUSPENSION`). Pemain terskors tampil "Skorsing" dan tidak bisa dipilih di line up; laga tidak bisa dimulai bila line up berisi pemain terskors. Panitia bisa **Batalkan skorsing**, **+1 laga**, atau **Kembalikan otomatis** di panel Skorsing pada editor line up (disimpan di `settings/main.suspOverrides`). Dashboard admin dan halaman laga publik menampilkan daftar skorsing.
-- **Layar TV saat laga LIVE**: hanya gol yang tampil (gol tim kiri di kiri, tim kanan di kanan, ikon bola di tengah, gaya papan skor). Pemain yang mencetak lebih dari satu gol tampil sekali dengan menit dipisah koma, mis. `Eko Syahputra 5', 8'`; gol bunuh diri diberi tanda (OG). Total kartu kuning dan merah cukup angka di bawah logo tim. Kartu, kiper, dan kejadian lain hanya ada di Ringkasan laga. **Laga yang dibuka admin lewat "Buka kembali untuk koreksi" tidak tampil di TV**, dan gol atau FT hasil koreksi tidak dianimasikan.
-- **Animasi dan suara gol di TV**: gol baru di laga LIVE memunculkan gawang menyerong (perspektif ke kanan) dengan jaring realistis dan bola masuk lalu menghantam jaring (4 detik, `js/goalfx.js`, SVG + CSS, tanpa video). Suara: taruh rekaman **`public/assets/gol.mp3`** dan akan diputar otomatis; tanpa file itu dibuat suara sorak + klakson + ucapan "Gooool" dari peramban. Peramban hanya mengizinkan suara setelah layar TV diketuk atau ditekan tombol sekali setiap halaman dibuka; ada tombol kecil di pojok kanan atas sampai itu dilakukan.
-- **Ikon bola**: file `public/assets/ball.png` (hitam, latar transparan). Dipakai di seluruh website, TV, animasi gol, dan admin; ganti gambarnya dengan menimpa file itu. Dasar putih dan warna garis (merah untuk gol bunuh diri) diatur lewat CSS (`.ball`, variabel `--b`).
+- **Ikon bola**: file `public/assets/ball.png` (hitam, latar transparan). Dipakai di seluruh website dan admin; ganti gambarnya dengan menimpa file itu. Dasar putih dan warna garis (merah untuk gol bunuh diri) diatur lewat CSS (`.ball`, variabel `--b`).
 - **Profil tim dan pemain** (`#/tim/ID`, `#/pemain/ID` di website; `#team/ID`, `#player/ID` di admin): main, M-S-K, gol, kebobolan, assist, kartu, daftar pemain dengan statistiknya, dan riwayat laga. Data dihitung dari kejadian yang sudah ada (`js/profile.js`), tanpa data baru.
 - **Statistik tim (admin)**: Tim & Pemain → Statistik tim. Tabel semua tim (gol, kebobolan, assist, kuning, merah) yang bisa diurutkan, ikut ke file Excel sebagai lembar *Statistik tim* dan *Statistik pemain*.
 - **Riwayat pertemuan**: di halaman laga (tab Ringkasan, website dan admin): pertemuan lain kedua tim yang sudah selesai, plus total menang/seri/kalah.
@@ -179,42 +170,16 @@ Satu baris = satu orang, kolom: **Tim, Grup, Peran, No, Nama**, dan **Kapten** (
 
 ## Tampilan (pembaruan)
 - **Navbar**: Beranda, Bagan, dan cabang **Info** (Tim, Jadwal, Klasemen, Statistik). Di HP, buka hamburger lalu ketuk Info. Tanpa ikon. Diatur di `NAV` pada `public/js/app.js`.
-- **Beranda**: banner geser otomatis (sambutan, laga LIVE/berikutnya, pendaftaran), menu cepat, ringkasan turnamen (tanggal, lokasi, peserta, format), lalu data laga, klasemen, dan statistik. Teks tanggal/lokasi ada di `dateRange` dan `TOURNAMENT`.
+- **Beranda**: papan skor laga, ringkasan turnamen (tanggal, lokasi, peserta, format), lalu data laga, klasemen, dan statistik. Teks tanggal/lokasi ada di `dateRange` dan `TOURNAMENT`.
 - **Admin**: sidebar kiri di desktop; di HP berubah menjadi bilah menu di bawah layar (mudah dijangkau jempol). Font: Barlow & Barlow Condensed (Google Fonts).
 - **Data contoh 16 tim**: `public/templates/data-16-tim-ifl-2026.xlsx` (dan `.csv`). Nama tim dan pemain fiktif; ganti sebelum impor.
 - **Jadwal 31 laga**: `public/templates/jadwal-ifl-2026.txt` (tempel di Admin → Pertandingan → Tambah pertandingan → Tempel banyak; impor dulu data 16 tim) dan `.xlsx` untuk dibaca/dicetak. Waktu yang belum ditentukan ditulis `TBD` (contoh: final) dan tampil sebagai "Waktu akan ditentukan"; jamnya bisa diisi nanti lewat Kelola laga.
 
-## Layar TV / proyektor
-Buka `https://alamatsitus/#/tv` di laptop yang tersambung ke TV, lalu **klik dua kali** atau tekan **F** untuk layar penuh.
-- Saat ada laga live: skor besar, jam laga, status babak, dan 4 kejadian terbaru. Bila ada beberapa laga live, bergantian tiap 15 detik.
-- Saat tidak ada laga live: laga berikutnya dengan hitung mundur dan klasemen grupnya (atau hasil terakhir untuk babak gugur).
-- **Penyelenggara**: bar putih di kiri bawah layar (kanan bawah sering tertutup badge Netlify) menampilkan tiga logo (Industropolis, Indonesia SEZ, Danantara) di semua tampilan TV. Memakai file yang sama dengan blok penyelenggara di beranda: `assets/logo-industropolis.png`, `assets/logo-sez.png`, `assets/logo-danantara.png`. Untuk mengganti, timpa file itu dengan nama yang sama (PNG latar transparan atau putih, **dipangkas rapat tanpa ruang kosong di tepi**, lebar sekitar 1400 px, rasio melebar; ketiga logo ditampilkan dengan lebar yang sama, jadi tinggi mengikuti bentuk masing-masing), lalu push. Jumlah logo (3) diatur di `tvSponsors` pada `public/js/app.js`.
-- Layar dijaga tidak mati otomatis (Screen Wake Lock) selama halaman ini terbuka.
-- Saat tidak ada laga live (hitung mundur, atau semua laga selesai), **bagian bawah layar berganti tiap 15 detik**: Line up laga berikutnya (hanya bila kedua tim sudah diisi; inti, kiper di atas, plus cadangan), satu layar **klasemen** berisi keempat grup (2 x 2), jadwal 5 laga berikutnya, 4 hasil terakhir, statistik (top scorer, top assist, kiper terbaik; hanya bila sudah ada gol atau assist), 3 **video satu layar penuh** (`promo.mp4` 8 dtk, `promo-tv-2.mp4` dan `promo-tv-3.mp4` masing-masing 15 dtk; daftarnya `BANNERS` di `app.js`; untuk layar TV yang hanya memutar 3 video, ubah `TV_VIDEO_ONLY` menjadi `true` di `app.js`). Bagian yang datanya belum ada otomatis dilewati. Layar berganti dengan memudar (jeda singkat), dan 3 video selalu berurutan di akhir putaran. Lama tiap layar mengikuti isinya (data 15 detik, video mengikuti panjang videonya). Hitung mundur lebih dari 24 jam tampil sebagai "11 hari 08:59:43".
-
 ## Kapten
-Admin → Tim & Pemain → ketuk tim → **Ubah** pemain (atau saat **Tambah pemain**) → centang **Kapten (C)**. Satu kapten per tim: memilih kapten baru otomatis melepas kapten lama. Tanda **C** tampil di daftar tim, line up di halaman laga, dan layar TV.
+Admin → Tim & Pemain → ketuk tim → **Ubah** pemain (atau saat **Tambah pemain**) → centang **Kapten (C)**. Satu kapten per tim: memilih kapten baru otomatis melepas kapten lama. Tanda **C** tampil di daftar tim, line up di halaman laga.
 Lewat **Tempel banyak pemain**, tambahkan kata `c` atau `kapten` (mis. `7, Andi, c`). Lewat impor Excel/CSV, pakai kolom **Kapten** (lihat bagian impor di atas). Bila file tidak punya kolom itu, kapten yang sudah diatur tidak berubah.
 Disimpan di dokumen pemain sebagai `isCaptain`; tidak perlu mengubah aturan Firestore untuk fitur ini.
 
 
-## Catatan pembaruan visual
-Video jadwal dan bagan (`promo-tv-2/3.mp4`, `promo-banner-2/3.mp4`) dirender ulang dari teks vektor, jadi tajam (H.264, CRF 14). Semua foto galeri di `assets/foto/` diseragamkan: rasio 4:5 (arena 16:10), resolusi 1600–2000 px, nada biru logo; foto hitam-putih memakai duotone biru tua. `bg-hero`, `bg-hero-m`, dan `bg-match` juga diberi nada biru yang sama.
-
-Video pembuka juga dirender ulang: `promo.mp4` (banner 1920x912) dan `promo-tv-1.mp4` (TV 1920x1080, poster `promo-tv-1-poster.jpg`). `og-image.jpg` diambil dari tampilan yang sama.
-
 ## Ekspor ke Excel
 Admin → Pengaturan → **Ekspor ke Excel** → Unduh. Satu file .xlsx berisi lembar Klasemen, Jadwal & hasil, Kejadian, Top scorer, Kartu & skorsing, dan Kiper. File dibuat di browser (`js/exporter.js`), tanpa library luar.
-
-## Layar TV: efek tambahan
-- **Gol**: bola masuk gawang + GOOOLL!. **Kartu**: kartu kuning/merah jatuh dengan nama pemain. **Peluit akhir**: skor akhir dan pemenang (9 detik) saat laga ditandai FT. Semua hanya untuk kejadian baru saat TV terbuka.
-- Total kartu (kuning dan merah) tiap tim tampil di bawah nama tim. Pelanggaran akumulatif tidak dicatat.
-- Line up laga berikutnya menampilkan baris **Skorsing** bila ada pemain terskors.
-
-## Check-in tim (registrasi hari-H)
-- Halaman terpisah di **`/checkin/`** (bukan menu admin). Dibuka lewat tombol **Check-in tim ↗** di bagian bawah sidebar admin dan di Dashboard. Login memakai akun admin yang sama.
-- Per tim: centang pemain dan official hadir, edit nomor punggung, tanda kiper dan skorsing, **kapten** (satu per tim), catatan, tambah pemain (maksimal 20), tambah atau ganti official (maksimal 2).
-- Verifikasi tim meminta konfirmasi, tetap di halaman tim, dan bisa **dibatalkan**. Ada **Reset check-in tim** dan **Reset semua check-in (uji coba)**.
-- Laporan: ringkasan di layar, unduh Excel (Rekap tim, Tidak hadir, Terverifikasi), cetak atau simpan PDF.
-- Hasil disimpan di koleksi Firestore `checkins` (id dokumen = id tim). **Publish `firestore.rules`** supaya aturan `checkins` aktif. Perubahan nomor, kapten, pemain, dan official menulis ke koleksi `players` yang sama dengan website.
-- Centang hadir belum membatasi editor line up; itu hanya catatan registrasi.

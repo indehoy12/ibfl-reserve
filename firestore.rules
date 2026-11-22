@@ -34,9 +34,6 @@ service cloud.firestore {
     match /matches/{id}   { allow read: if true; allow write: if isAdmin(); }
     match /events/{id}    { allow read: if true; allow write: if isAdmin(); }
 
-    // Check-in tim hari-H (tab "Check-in tim" di admin): hanya admin.
-    match /checkins/{id}  { allow read, write: if isAdmin(); }
-
     // Selain itu ditutup.
     match /{document=**} { allow read, write: if false; }
   }

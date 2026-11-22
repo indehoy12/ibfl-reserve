@@ -237,8 +237,6 @@ function topBar() {
     <div class="side-clock">${rtClockHtml("adm")}</div>
     <nav class="side-tree" aria-label="Menu admin">${tree}</nav>
     <div class="side-foot">
-      <a class="side-link" href="../#/tv" target="_blank" rel="noopener" title="Buka layar TV di tab baru">Layar TV ↗</a>
-      <a class="side-link" href="../checkin/" target="_blank" rel="noopener" title="Buka halaman registrasi tim di tab baru">Check-in tim ↗</a>
       <a class="side-link" href="../" target="_blank" rel="noopener">Lihat website publik ↗</a>
       <span class="who" title="UID: ${esc(user.uid)}">${esc(user.email)}</span>
       <button class="btn sm ghost" data-act="logout">Keluar</button>
@@ -284,7 +282,7 @@ function dashboardView() {
   const scCard = `<div class="panel"><h2 class="a">Top scorer</h2>${sc.length ? sc.map((p, i) => `<div class="dline"><span>${i + 1}. ${esc(p.name)} <small>${esc(tName(p.teamId))}</small></span><b>${p.goals}</b></div>`).join("") : `<p class="empty">Belum ada gol.</p>`}</div>`;
   const warn = sched.filter((m) => matchReadiness(m, state.players).length).length;
   const alertCard = warn ? `<div class="panel warnbox"><b>${warn} laga terjadwal</b> belum lengkap line up-nya. <a class="lnk" href="#matches">Buka daftar pertandingan</a></div>` : "";
-  return `<h1 class="page">Dashboard <a class="tvbtn" href="../#/tv" target="_blank" rel="noopener" title="Buka layar TV di tab baru">Layar TV ↗</a> <a class="tvbtn" href="../checkin/" target="_blank" rel="noopener" title="Buka halaman registrasi tim di tab baru">Check-in tim ↗</a></h1>${alertCard}${champPanel()}${suspCard()}${kpis}
+  return `<h1 class="page">Dashboard</h1>${alertCard}${champPanel()}${suspCard()}${kpis}
     <div class="dgrid">${liveCard}${nextCard}</div>${prog}
     <div class="dgrid">${lastCard}${scCard}</div>
     <div class="panel"><h2 class="a">Klasemen sementara</h2><div class="dstds">${stdCard || `<p class="empty">Belum ada grup.</p>`}</div></div>`;
@@ -838,7 +836,7 @@ function teamView(id) {
         <div><b>${logoOf(t) ? "Logo unggahan" : "Belum ada logo"}</b>
           <p class="hint" style="margin:4px 0 0">Unggah logo tim sendiri. Tanpa logo, tim tampil dengan lingkaran singkatan nama.</p></div></div>
       <div class="logo-up"><label>${logoOf(t) ? "Ganti logo" : "Unggah logo"}</label><input type="file" accept="image/*" data-logo="${esc(t.id)}">
-        <p class="hint">PNG latar transparan atau SVG, sebaiknya 512 px ke atas supaya tajam di layar TV. Ruang kosong di sekitar logo dipangkas otomatis, dan logo lurus/memanjang tidak perlu dibuat persegi: kotaknya menyesuaikan bentuk logo.</p></div>
+        <p class="hint">PNG latar transparan atau SVG, sebaiknya 512 px ke atas supaya tajam di layar besar. Ruang kosong di sekitar logo dipangkas otomatis, dan logo lurus/memanjang tidak perlu dibuat persegi: kotaknya menyesuaikan bentuk logo.</p></div>
       ${logoOf(t) ? `<button class="btn sm danger mini" style="margin-top:12px" data-act="del-logo" data-id="${esc(t.id)}">Hapus logo (pakai singkatan)</button>` : ""}
     </div>
     <div class="panel"><h2 class="a">Pemain <span class="cntb">${roster.length}/${LIMITS.players}</span></h2>
@@ -1792,7 +1790,7 @@ function fileToLogo(file) {
         if (a1 > a0 && b1 > b0) { x0 = a0; y0 = b0; x1 = a1; y1 = b1; }
       } catch { /* gambar dari sumber lain: pakai seluruh gambar */ }
       const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
-      // 2) kanvas hasil: logo lurus tetap lebar (maks. 3 : 1), selain itu persegi. Resolusi tinggi supaya tajam di TV dan monitor besar;
+      // 2) kanvas hasil: logo lurus tetap lebar (maks. 3 : 1), selain itu persegi. Resolusi tinggi supaya tajam di monitor besar;
       //    bila terlalu besar untuk disimpan, resolusi diturunkan bertahap.
       const ratio = cw / ch, wide = ratio > 1.6, rr = Math.min(ratio, 3);
       const render = (long, q) => {

@@ -1,10 +1,10 @@
 // Fungsi murni (tanpa Firebase) supaya mudah dites.
 
-// SATU TEMPAT untuk nama dan info turnamen. Ubah di sini, lalu semua tampilan (beranda, TV, judul tab, footer) ikut berubah.
-// Catatan: judul/deskripsi di <head> index.html dan admin/index.html, serta teks di dalam video promo dan og-image.jpg, diubah manual.
+// SATU TEMPAT untuk nama dan info turnamen. Ubah di sini, lalu semua tampilan (beranda, judul tab, footer) ikut berubah.
+// Catatan: judul/deskripsi di <head> index.html dan admin/index.html, serta teks di dalam og-image.jpg, diubah manual.
 export const TOURNAMENT = {
   name: "Industropolis Batang Futsal League", // nama lengkap (judul tab, footer, alt logo)
-  line1: "Industropolis Batang",               // baris 1 di logo teks (bilah atas, hero, TV)
+  line1: "Industropolis Batang",               // baris 1 di logo teks (bilah atas, hero)
   line2: "Futsal League",                      // baris 2 (miring)
   short: "IBFL 2026",
   tagline: "Khusus karyawan tenant Industropolis Batang",

@@ -41,14 +41,3 @@
   from = "/admin"
   to = "/admin/index.html"
   status = 200
-
-[[headers]]
-  for = "/checkin/*"
-  [headers.values]
-    Cache-Control = "no-store"
-    X-Robots-Tag = "noindex, nofollow"
-
-[[redirects]]
-  from = "/checkin"
-  to = "/checkin/index.html"
-  status = 200
