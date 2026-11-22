@@ -52,7 +52,7 @@ Tim yang belum punya logo menampilkan lingkaran berisi singkatan nama tim.
 ## Langkah pasang (urut)
 
 ### 1. Pasang aturan keamanan Firestore
-1. Buat akun admin di Firebase Authentication (Email/Password). Salin **User UID**-nya (Authentication → Users), lalu di `firestore.rules` ganti `GANTI_DENGAN_UID_ADMIN` dengan UID itu. UID dipakai, bukan email, supaya email admin tidak terlihat di repositori publik.
+1. Buat akun admin di Firebase Authentication (Email/Password). Salin **User UID**-nya (Authentication → Users), lalu di `firestore.rules` tempel UID itu di daftar `isAdmin()` pada `firestore.rules` (sudah terisi di berkas ini). UID dipakai, bukan email, supaya email admin tidak terlihat di repositori publik.
 2. Firebase Console → **Firestore Database → Rules** → hapus isi lama → tempel seluruh isi file → **Publish**.
 
 Tanpa langkah ini, website publik tidak bisa membaca data dan admin tidak bisa menyimpan.
@@ -172,8 +172,6 @@ Satu baris = satu orang, kolom: **Tim, Grup, Peran, No, Nama**, dan **Kapten** (
 - **Navbar**: Beranda, Bagan, dan cabang **Info** (Tim, Jadwal, Klasemen, Statistik). Di HP, buka hamburger lalu ketuk Info. Tanpa ikon. Diatur di `NAV` pada `public/js/app.js`.
 - **Beranda**: papan skor laga, ringkasan turnamen (tanggal, lokasi, peserta, format), lalu data laga, klasemen, dan statistik. Teks tanggal/lokasi ada di `dateRange` dan `TOURNAMENT`.
 - **Admin**: sidebar kiri di desktop; di HP berubah menjadi bilah menu di bawah layar (mudah dijangkau jempol). Font: Barlow & Barlow Condensed (Google Fonts).
-- **Data contoh 16 tim**: `public/templates/data-16-tim-ifl-2026.xlsx` (dan `.csv`). Nama tim dan pemain fiktif; ganti sebelum impor.
-- **Jadwal 31 laga**: `public/templates/jadwal-ifl-2026.txt` (tempel di Admin → Pertandingan → Tambah pertandingan → Tempel banyak; impor dulu data 16 tim) dan `.xlsx` untuk dibaca/dicetak. Waktu yang belum ditentukan ditulis `TBD` (contoh: final) dan tampil sebagai "Waktu akan ditentukan"; jamnya bisa diisi nanti lewat Kelola laga.
 
 ## Kapten
 Admin → Tim & Pemain → ketuk tim → **Ubah** pemain (atau saat **Tambah pemain**) → centang **Kapten (C)**. Satu kapten per tim: memilih kapten baru otomatis melepas kapten lama. Tanda **C** tampil di daftar tim, line up di halaman laga.
