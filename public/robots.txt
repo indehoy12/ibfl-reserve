@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ibfl.eventkami.web.id/sitemap.xml

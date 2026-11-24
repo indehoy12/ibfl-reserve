@@ -67,7 +67,7 @@ export const nowMs = () => Date.now() + serverOffset;
 export async function syncServerTime() {
   try {
     const t0 = Date.now();
-    const res = await fetch(location.pathname || "/", { method: "HEAD", cache: "no-store" });
+    const res = await fetch("/", { method: "HEAD", cache: "no-store" });
     const t1 = Date.now();
     const h = res.headers.get("date");
     if (!h) return;

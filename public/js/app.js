@@ -76,21 +76,42 @@ const penNote = (m) => {
 
 // Menu atas: Beranda, Bagan, dan satu cabang "Info" (Tim, Jadwal, Klasemen, Statistik).
 const NAV = [
-  { href: "#/", label: "Beranda", key: "home" },
-  { href: "#/bagan", label: "Bagan", key: "bagan" },
+  { href: "/", label: "Beranda", key: "home" },
+  { href: "/bagan", label: "Bagan", key: "bagan" },
   { label: "Info", key: "info", sub: [
-    ["#/tim", "Tim", "tim"],
-    ["#/jadwal", "Jadwal", "jadwal"],
-    ["#/klasemen", "Klasemen", "klasemen"],
-    ["#/statistik", "Statistik", "statistik"],
-    ["#/juara", "Juara & arsip", "juara"],
+    ["/tim", "Tim", "tim"],
+    ["/jadwal", "Jadwal", "jadwal"],
+    ["/klasemen", "Klasemen", "klasemen"],
+    ["/statistik", "Statistik", "statistik"],
+    ["/juara", "Juara & arsip", "juara"],
   ] },
 ];
 let subOpen = false;
 
-// ---------- Router ----------
+const HOME_DESC = "Live score, jadwal, klasemen, line up, dan statistik Industropolis Batang Futsal League (IBFL) 2026 di KEK Industropolis Batang, khusus karyawan tenant.";
+// ---------- Router (alamat biasa: /jadwal, /klasemen, /laga/123) ----------
+// Tautan lama berbentuk #/jadwal diarahkan ke /jadwal supaya link yang sudah beredar tetap jalan.
+if (/^#\/./.test(location.hash)) history.replaceState(null, "", location.hash.slice(1));
+function navigate(url) {
+  if (url === location.pathname + location.search) { window.scrollTo(0, 0); return; }
+  history.pushState(null, "", url);
+  onNavigate();
+}
+function onNavigate() { subOpen = false; setMenu(false, { focus: false }); startSkeleton(); render(); }
+document.addEventListener("click", (e) => {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target.closest("a[href]");
+  if (!a || a.target || a.hasAttribute("download")) return;
+  const h = a.getAttribute("href");
+  if (!h.startsWith("/") || h.startsWith("//") || /^\/(admin|assets|css|js|templates)(\/|$)/.test(h)) return;
+  e.preventDefault();
+  navigate(h);
+});
+window.addEventListener("popstate", onNavigate);
+// Link lama #/jadwal yang dibuka saat situs sudah terbuka di tab yang sama
+window.addEventListener("hashchange", () => { if (/^#\/./.test(location.hash)) { history.replaceState(null, "", location.hash.slice(1)); onNavigate(); } });
 function route() {
-  const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+  const parts = location.pathname.split("/").filter(Boolean);
   return { name: parts[0] || "home", id: parts[1], tab: parts[2] };
 }
 
@@ -148,11 +169,11 @@ function statTiles(stats) {
 }
 
 const sponsors = `<div class="sponsors">
-  <img class="big" src="assets/logo-industropolis.png" alt="Industropolis Batang, Member of Danareksa">
+  <img class="big" src="/assets/logo-industropolis.png" alt="Industropolis Batang, Member of Danareksa">
   <hr>
-  <img src="assets/logo-sez.png" alt="Indonesia SEZ - Dewan Nasional Kawasan Ekonomi Khusus">
+  <img src="/assets/logo-sez.png" alt="Indonesia SEZ - Dewan Nasional Kawasan Ekonomi Khusus">
   <hr>
-  <img src="assets/logo-danantara.png" alt="Danantara Indonesia Sovereign Fund">
+  <img src="/assets/logo-danantara.png" alt="Danantara Indonesia Sovereign Fund">
 </div>`;
 
 // Galeri beranda: tiap kotak adalah carousel otomatis (fade halus). Bentuk kotak mengikuti arah foto supaya tidak ada yang terpotong:
@@ -166,7 +187,7 @@ const GALLERY = [
   ["gn", "Sagara Futsal Arena", "Lapangan Sagara Futsal Arena di KEK Industropolis Batang", ["sagara-1", "sagara-3", "sagara-4", "sagara-6", "sagara-7"]],
   ["gw", "Sagara Futsal Arena", "Lapangan Sagara Futsal Arena di KEK Industropolis Batang", ["sagara-2", "sagara-5"]],
 ];
-const gallery = `<div class="gallery">${GALLERY.map(([kind, cap, alt, photos], gi) => `<figure class="${kind}" data-g="${gi}" aria-label="${cap}">${photos.map((f, i) => `<div class="slide${i === 0 ? " on" : ""}"><img class="fg" src="assets/foto/${f}.jpg" alt="${alt}" ${i <= 1 ? "" : 'loading="lazy" '}decoding="async"></div>`).join("")}<figcaption>${cap}</figcaption><button type="button" class="gzoom" aria-label="Perbesar foto ${cap}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button></figure>`).join("")}</div>`;
+const gallery = `<div class="gallery">${GALLERY.map(([kind, cap, alt, photos], gi) => `<figure class="${kind}" data-g="${gi}" aria-label="${cap}">${photos.map((f, i) => `<div class="slide${i === 0 ? " on" : ""}"><img class="fg" src="/assets/foto/${f}.jpg" alt="${alt}" ${i <= 1 ? "" : 'loading="lazy" '}decoding="async"></div>`).join("")}<figcaption>${cap}</figcaption><button type="button" class="gzoom" aria-label="Perbesar foto ${cap}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button></figure>`).join("")}</div>`;
 const GALLERY_EVERY = 5; // detik per foto; tiap kotak mulai bergeser 1 detik supaya tidak berganti bersamaan
 let galleryTick = 0;
 function galleryGo(fig, to) {
@@ -220,7 +241,7 @@ function openGalleryLightbox(gi, start) {
   const ico = (d) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   lb.innerHTML = `<div class="glb-top"><div class="glb-title"><b>${cap}</b><span class="glb-count"></span></div><button type="button" class="glb-x" aria-label="Tutup">${ico('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>`
     + `<div class="glb-stage"><img class="glb-img" alt="">${n > 1 ? `<button type="button" class="glb-nav prev" aria-label="Foto sebelumnya">${ico('<path d="M15 5l-7 7 7 7"/>')}</button><button type="button" class="glb-nav next" aria-label="Foto berikutnya">${ico('<path d="M9 5l7 7-7 7"/>')}</button>` : ""}</div>`
-    + (n > 1 ? `<div class="glb-thumbs">${photos.map((f, i) => `<button type="button" data-i="${i}" aria-label="Foto ${i + 1}"><img src="assets/foto/t/${f}.jpg" alt="" loading="lazy" decoding="async"></button>`).join("")}</div>` : "");
+    + (n > 1 ? `<div class="glb-thumbs">${photos.map((f, i) => `<button type="button" data-i="${i}" aria-label="Foto ${i + 1}"><img src="/assets/foto/t/${f}.jpg" alt="" loading="lazy" decoding="async"></button>`).join("")}</div>` : "");
   document.body.appendChild(lb);
   document.body.classList.add("lb-open");
   const img = lb.querySelector(".glb-img");
@@ -229,7 +250,7 @@ function openGalleryLightbox(gi, start) {
   const show = (i) => {
     cur = ((i % n) + n) % n;
     img.classList.add("out");
-    const src = `assets/foto/hd/${photos[cur]}.jpg`; // versi HD untuk tampilan zoom
+    const src = `/assets/foto/hd/${photos[cur]}.jpg`; // versi HD untuk tampilan zoom
     const done = () => img.classList.remove("out");
     img.onload = done; img.onerror = done;
     img.src = src;
@@ -237,7 +258,7 @@ function openGalleryLightbox(gi, start) {
     img.alt = `${alt} (${cur + 1} dari ${n})`;
     count.textContent = n > 1 ? `${cur + 1} / ${n}` : "";
     thumbs.forEach((t, k) => { t.classList.toggle("on", k === cur); if (k === cur) t.scrollIntoView({ block: "nearest", inline: "center" }); });
-    [cur + 1, cur - 1].forEach((k) => { const nb = photos[((k % n) + n) % n]; if (nb) new Image().src = `assets/foto/hd/${nb}.jpg`; });
+    [cur + 1, cur - 1].forEach((k) => { const nb = photos[((k % n) + n) % n]; if (nb) new Image().src = `/assets/foto/hd/${nb}.jpg`; });
   };
   const close = () => {
     document.removeEventListener("keydown", onKey, true);
@@ -303,11 +324,11 @@ function boardItems(live, next) {
 function boardView(items) {
   if (!items.length) {
     return `<div class="board-in"><div class="board-idle">
-      <img class="idle-logo" src="assets/logo.png" alt="Logo ${esc(TOURNAMENT.name)}" width="150" height="181" data-sitelogo>
+      <img class="idle-logo" src="/assets/logo.png" alt="Logo ${esc(TOURNAMENT.name)}" width="150" height="181" data-sitelogo>
       <h1>${esc(TOURNAMENT.line1)}<em>${esc(TOURNAMENT.line2)}</em></h1>
       <div class="idle-facts"><span>16 Team</span><span>League System</span><span>31 Match</span></div>
       <p class="idle-when"><i>${dateRange}</i><b>${esc(TOURNAMENT.tagline)}</b></p>
-      <div class="acts"><a class="board-link" href="#/jadwal">Lihat jadwal</a><a class="board-link ghost" href="#/klasemen">Klasemen</a></div>
+      <div class="acts"><a class="board-link" href="/jadwal">Lihat jadwal</a><a class="board-link ghost" href="/klasemen">Klasemen</a></div>
     </div></div>`;
   }
   if (boardIdx >= items.length) boardIdx = 0;
@@ -322,7 +343,7 @@ function boardView(items) {
       <div class="board-num ${kind === "next" ? "vs" : ""}">${kind === "next" ? "vs" : scoreText(m)}</div>
       <div class="board-team">${badge(B, false, "lg")}${esc(sideName(m, "B"))}</div>
     </div>
-    <div class="board-foot">${kind === "live" ? statusPill(m) : `<span class="board-meta">${when}</span>`}<a class="board-link" href="#/laga/${esc(m.id)}">Detail pertandingan</a></div>
+    <div class="board-foot">${kind === "live" ? statusPill(m) : `<span class="board-meta">${when}</span>`}<a class="board-link" href="/laga/${esc(m.id)}">Detail pertandingan</a></div>
     ${items.length > 1 ? `<div class="board-tabs" role="tablist" aria-label="Pilih laga">${items.map((_, i) => `<button type="button" role="tab" aria-selected="${i === boardIdx}" class="${i === boardIdx ? "on" : ""}" data-board="${i}" aria-label="Laga ${i + 1}"></button>`).join("")}</div>` : ""}
   </div>`;
 }
@@ -347,20 +368,20 @@ function homeView() {
     </div></div>`;
 
   if (a?.active && (a.title || a.body)) h += `<div class="announce"><h3>${esc(a.title)}</h3><p>${esc(a.body)}</p></div>`;
-  if (champOn()) { const ci = championInfo(state.matches); h += `<a class="champ-banner" href="#/juara"><small>Turnamen selesai</small><b>Juara: ${esc(tName(ci.champion))}</b><span>Lihat juara dan arsip turnamen →</span></a>`; }
+  if (champOn()) { const ci = championInfo(state.matches); h += `<a class="champ-banner" href="/juara"><small>Turnamen selesai</small><b>Juara: ${esc(tName(ci.champion))}</b><span>Lihat juara dan arsip turnamen →</span></a>`; }
   h += '<div class="home-grid"><div class="hcol">';
   if (live.length) {
-    h += `<div class="head"><h2>Sedang berlangsung</h2></div>` + live.map((m) => `<a class="livecard" href="#/laga/${esc(m.id)}">
+    h += `<div class="head"><h2>Sedang berlangsung</h2></div>` + live.map((m) => `<a class="livecard" href="/laga/${esc(m.id)}">
       <div class="top"><span>${matchLabel(m)}</span>${statusPill(m)}</div>
       <div class="scoreline"><span class="t">${sideBadge(m, "A")}<span class="n">${esc(sideName(m, "A"))}</span></span><span class="s">${scoreText(m)}</span><span class="t r"><span class="n">${esc(sideName(m, "B"))}</span>${sideBadge(m, "B")}</span></div></a>`).join("");
   }
-  h += `<div class="head"><h2>Laga berikutnya</h2><a href="#/jadwal">Semua jadwal</a></div><div class="sheet">${next.length ? next.map(matchRow).join("") : `<p class="empty">Belum ada jadwal berikutnya.</p>`}</div>`;
+  h += `<div class="head"><h2>Laga berikutnya</h2><a href="/jadwal">Semua jadwal</a></div><div class="sheet">${next.length ? next.map(matchRow).join("") : `<p class="empty">Belum ada jadwal berikutnya.</p>`}</div>`;
   h += `<div class="head"><h2>Hasil terakhir</h2></div><div class="sheet">${last.length ? last.map(resultRow).join("") : `<p class="empty">Belum ada pertandingan yang selesai.</p>`}</div>`;
   h += '</div><div class="hcol">';
-  h += `<div class="head"><h2>Klasemen${homeGroup ? " Grup " + esc(homeGroup) : ""}</h2><a href="#/klasemen">Semua grup</a></div>`;
+  h += `<div class="head"><h2>Klasemen${homeGroup ? " Grup " + esc(homeGroup) : ""}</h2><a href="/klasemen">Semua grup</a></div>`;
   if (groups.length > 1) h += `<div class="chips">${groups.map((g) => `<button class="chip ${g === homeGroup ? "on" : ""}" data-group="${esc(g)}">Grup ${esc(g)}</button>`).join("")}</div>`;
   h += `<div class="sheet">${homeGroup ? standingsTable(standings[homeGroup], QUALIFY_PER_GROUP, groupDone(homeGroup)) : `<p class="empty">Klasemen tampil setelah tim dan grup dibuat.</p>`}</div>${homeGroup ? standingNote() : ""}`;
-  h += `<div class="head"><h2>Statistik pemain</h2><a href="#/statistik">Selengkapnya</a></div>${statTiles(stats)}`;
+  h += `<div class="head"><h2>Statistik pemain</h2><a href="/statistik">Selengkapnya</a></div>${statTiles(stats)}`;
   h += "</div></div>";
   h += `<div class="head"><h2>Suasana turnamen</h2></div>${gallery}`;
   h += `<div class="head"><h2>Penyelenggara</h2></div>${sponsors}${footer}`;
@@ -369,13 +390,13 @@ function homeView() {
 
 function matchRow(m) {
   const today = dayKey(new Date()) === dayKey(m.kickoff);
-  return `<a class="mrow" href="#/laga/${esc(m.id)}">
+  return `<a class="mrow" href="/laga/${esc(m.id)}">
     <div class="when">${timeStr(m.kickoff)}${today ? "" : `<small>${dayShort(m.kickoff)}</small>`}</div>
     <div class="vs">${vt(m, "A")}${vt(m, "B")}<span class="sub">${matchLabel(m)}</span></div><span></span></a>`;
 }
 function resultRow(m) {
   const a = m.scoreA ?? 0, b = m.scoreB ?? 0;
-  return `<a class="res" href="#/laga/${esc(m.id)}">
+  return `<a class="res" href="/laga/${esc(m.id)}">
     <span class="tn ${a > b ? "win" : ""}">${sideBadge(m, "A")}<span class="n">${esc(sideName(m, "A"))}</span></span>
     <span class="sc">${a} – ${b}</span>
     <span class="tn r ${b > a ? "win" : ""}"><span class="n">${esc(sideName(m, "B"))}</span>${sideBadge(m, "B")}</span></a>`;
@@ -412,7 +433,7 @@ function jadwalView() {
     h += list.map((m) => {
       const played = m.status !== "scheduled";
       const mid = `${vt(m, "A", played ? `<span class="s">${m.scoreA ?? 0}</span>` : "")}${vt(m, "B", played ? `<span class="s">${m.scoreB ?? 0}</span>` : "")}`;
-      return `<a class="mrow ${m.status === "live" ? "liverow" : ""}" href="#/laga/${esc(m.id)}"><div class="when">${timeStr(m.kickoff)}</div><div class="vs">${mid}<span class="sub">${matchLabel(m)}${played ? penNote(m) : ""}</span></div>${m.status === "scheduled" ? "<span></span>" : statusPill(m)}</a>`;
+      return `<a class="mrow ${m.status === "live" ? "liverow" : ""}" href="/laga/${esc(m.id)}"><div class="when">${timeStr(m.kickoff)}</div><div class="vs">${mid}<span class="sub">${matchLabel(m)}${played ? penNote(m) : ""}</span></div>${m.status === "scheduled" ? "<span></span>" : statusPill(m)}</a>`;
     }).join("");
     h += `</div></div>`;
   }
@@ -450,7 +471,7 @@ function bracketCard(slot, cls = "") {
   const body = `<div class="bhead"><span>${esc(slot.name)}</span><span>${right}</span></div>
     ${bracketTeam(slot, "A", m)}${bracketTeam(slot, "B", m)}${m?.status === "ft" ? `<div class="bnote">${esc(when)}${penTeam ? `. Menang adu penalti: ${esc(penTeam.name)}${penScoreText(m, true) ? ` (${penScoreText(m, true)})` : ""}` : ""}</div>` : ""}`;
   return m
-    ? `<a class="bm ${cls}" href="#/laga/${esc(m.id)}" aria-label="${esc(slot.name)}: lihat detail laga">${body}</a>`
+    ? `<a class="bm ${cls}" href="/laga/${esc(m.id)}" aria-label="${esc(slot.name)}: lihat detail laga">${body}</a>`
     : `<div class="bm ${cls}">${body}</div>`;
 }
 function baganView() {
@@ -475,7 +496,7 @@ function baganView() {
 function playerRows(list, key, unit) {
   if (!list.length) return `<p class="empty">Belum ada data.</p>`;
   return list.map((p, i) => `<div class="prow"><span class="n">${i + 1}</span>
-    <span class="who"><b><a class="plink" href="#/pemain/${esc(p.id)}">${esc(p.name)}</a></b><span>${esc(tName(p.teamId))}</span></span><span class="v">${p[key]}${unit ? ` <small>${unit}</small>` : ""}</span></div>`).join("");
+    <span class="who"><b><a class="plink" href="/pemain/${esc(p.id)}">${esc(p.name)}</a></b><span>${esc(tName(p.teamId))}</span></span><span class="v">${p[key]}${unit ? ` <small>${unit}</small>` : ""}</span></div>`).join("");
 }
 function keeperAward(gk) {
   const d = keeperDetail(gk.id, state.players, state.matches, state.teams, state.events);
@@ -517,7 +538,7 @@ function timView() {
       const officials = state.players.filter((p) => p.teamId === t.id && p.role === "official");
       return `<details class="team" data-team="${esc(t.id)}" ${openTeams.has(t.id) ? "open" : ""}>
         <summary>${badge(t)}<span>${esc(t.name)}</span><span class="c">${roster.length} pemain</span></summary>
-        <div class="roster"><a class="tprofile" href="#/tim/${esc(t.id)}">Profil dan riwayat tim →</a>${roster.length ? roster.map((p) => `<div class="pl"><span class="no">${p.number ?? ""}</span><span><a class="plink" href="#/pemain/${esc(p.id)}">${esc(p.name)}</a></span>${p.isGK ? '<span class="badge-gk">GK</span>' : ""}${p.isCaptain ? '<span class="badge-gk badge-cap">C</span>' : ""}</div>`).join("") : `<p class="muted small" style="padding:6px 0">Pemain belum diinput.</p>`}${officials.length ? `<p class="muted small ofs">Official: ${officials.map((o) => esc(o.name)).join(", ")}</p>` : ""}</div></details>`;
+        <div class="roster"><a class="tprofile" href="/tim/${esc(t.id)}">Profil dan riwayat tim →</a>${roster.length ? roster.map((p) => `<div class="pl"><span class="no">${p.number ?? ""}</span><span><a class="plink" href="/pemain/${esc(p.id)}">${esc(p.name)}</a></span>${p.isGK ? '<span class="badge-gk">GK</span>' : ""}${p.isCaptain ? '<span class="badge-gk badge-cap">C</span>' : ""}</div>`).join("") : `<p class="muted small" style="padding:6px 0">Pemain belum diinput.</p>`}${officials.length ? `<p class="muted small ofs">Official: ${officials.map((o) => esc(o.name)).join(", ")}</p>` : ""}</div></details>`;
     }).join("")}</div>`).join("") + `</div>${footer}`;
 }
 
@@ -533,31 +554,31 @@ const evIcons = (rw) => [
 ].join("");
 function teamProfileView(id) {
   const t = state.teamById[id];
-  if (!t) return `<a class="back" href="#/tim">← Tim</a><div class="sheet"><p class="empty">Tim tidak ditemukan.</p></div>`;
+  if (!t) return `<a class="back" href="/tim">← Tim</a><div class="sheet"><p class="empty">Tim tidak ditemukan.</p></div>`;
   const s = teamSummary(id, state), prog = teamProgress(id, state.teams, state.matches, state.events);
   const played = (pid) => state.matches.filter((m) => m.status !== "scheduled" && (lineupIds(m, "A").includes(pid) || lineupIds(m, "B").includes(pid))).length;
-  const hist = s.history.length ? s.history.map(({ m, opp, r }) => `<a class="hrow" href="#/laga/${esc(m.id)}"><span class="hw">${resChip(r)}</span>
+  const hist = s.history.length ? s.history.map(({ m, opp, r }) => `<a class="hrow" href="/laga/${esc(m.id)}"><span class="hw">${resChip(r)}</span>
       <span class="hv">${m.teamA === id ? "" : "@ "}${esc(opp ? tName(opp) : "Belum ditentukan")}<small>${matchLabel(m)}${m.kickoff ? " · " + dayShort(m.kickoff) : ""}</small></span>
       <b>${r ? `${r.my} – ${r.opp}${r.pen ? ` <small>(pen ${r.pen === "menang" ? "menang" : "kalah"})</small>` : ""}` : m.status === "live" ? "LIVE" : timeStr(m.kickoff)}</b></a>`).join("") : `<p class="empty">Belum ada jadwal.</p>`;
-  return `<a class="back" href="#/tim">← Tim</a>
+  return `<a class="back" href="/tim">← Tim</a>
     <div class="ph"><div class="ph-top">${badge(t, false, "lg")}<div><h2>${esc(t.name)}</h2><p>${t.group ? `Grup ${esc(t.group)} · ` : ""}${esc(prog.label)}</p></div></div>
     <div class="sgrid">${sbox(s.played, "Main")}${sbox(`${s.w}-${s.d}-${s.l}`, "M-S-K")}${sbox(s.gf, "Gol")}${sbox(s.ga, "Kebobolan")}${sbox(s.assists, "Assist")}${sbox(s.yellow, "Kuning")}${sbox(s.red, "Merah")}</div></div>
     <div class="head"><h2>Pemain</h2></div>
-    <div class="sheet" style="overflow-x:auto">${s.roster.length ? `<table class="std ptbl"><thead><tr><th>#</th><th class="tm">Pemain</th><th>Main</th><th>Gol</th><th>Ast</th><th><span class="ico yc"></span></th><th><span class="ico rc"></span></th></tr></thead><tbody>${s.roster.map((p) => `<tr><td class="rank">${p.number ?? ""}</td><td class="tm"><a class="plink" href="#/pemain/${esc(p.id)}">${esc(p.name)}</a>${p.isGK ? ' <span class="badge-gk">GK</span>' : ""}${p.isCaptain ? ' <span class="badge-gk badge-cap">C</span>' : ""}</td><td>${played(p.id)}</td><td>${p.goals}</td><td>${p.assists}</td><td>${p.yellow}</td><td>${p.red}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Pemain belum diinput.</p>`}</div>
+    <div class="sheet" style="overflow-x:auto">${s.roster.length ? `<table class="std ptbl"><thead><tr><th>#</th><th class="tm">Pemain</th><th>Main</th><th>Gol</th><th>Ast</th><th><span class="ico yc"></span></th><th><span class="ico rc"></span></th></tr></thead><tbody>${s.roster.map((p) => `<tr><td class="rank">${p.number ?? ""}</td><td class="tm"><a class="plink" href="/pemain/${esc(p.id)}">${esc(p.name)}</a>${p.isGK ? ' <span class="badge-gk">GK</span>' : ""}${p.isCaptain ? ' <span class="badge-gk badge-cap">C</span>' : ""}</td><td>${played(p.id)}</td><td>${p.goals}</td><td>${p.assists}</td><td>${p.yellow}</td><td>${p.red}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Pemain belum diinput.</p>`}</div>
     <div class="head"><h2>Riwayat laga</h2></div><div class="sheet">${hist}</div>${footer}`;
 }
 function playerProfileView(id) {
   const d = playerProfile(id, state);
-  if (!d || d.p.role === "official") return `<a class="back" href="#/tim">← Tim</a><div class="sheet"><p class="empty">Pemain tidak ditemukan.</p></div>`;
+  if (!d || d.p.role === "official") return `<a class="back" href="/tim">← Tim</a><div class="sheet"><p class="empty">Pemain tidak ditemukan.</p></div>`;
   const { p, stat, rows, keeper } = d, t = state.teamById[p.teamId];
   const boxes = [sbox(d.played, "Main"), sbox(stat.goals, "Gol"), sbox(stat.assists, "Assist"), sbox(stat.yellow, "Kuning"), sbox(stat.red, "Merah")];
   if (stat.ownGoals) boxes.push(sbox(stat.ownGoals, "Gol bunuh diri"));
   if (keeper && keeper.played) boxes.push(sbox(keeper.cleanSheets, "Clean sheet"), sbox(keeper.conceded, "Kebobolan"));
-  const hist = rows.length ? [...rows].reverse().map((rw) => `<a class="hrow" href="#/laga/${esc(rw.m.id)}"><span class="hw">${resChip(rw.r)}</span>
+  const hist = rows.length ? [...rows].reverse().map((rw) => `<a class="hrow" href="/laga/${esc(rw.m.id)}"><span class="hw">${resChip(rw.r)}</span>
       <span class="hv">vs ${esc(rw.opp ? tName(rw.opp) : "–")}<small>${matchLabel(rw.m)}${rw.m.kickoff ? " · " + dayShort(rw.m.kickoff) : ""}</small><span class="pes">${evIcons(rw) || '<span class="muted small">Tanpa catatan</span>'}</span></span>
       <b>${rw.r ? `${rw.r.my} – ${rw.r.opp}` : "LIVE"}</b></a>`).join("") : `<p class="empty">Belum ada laga.</p>`;
-  return `<a class="back" href="${t ? "#/tim/" + esc(t.id) : "#/tim"}">← ${esc(t?.name || "Tim")}</a>
-    <div class="ph"><div class="ph-top"><span class="ph-no">${p.number ?? ""}</span><div><h2>${esc(p.name)}</h2><p>${t ? `<a class="plink" href="#/tim/${esc(t.id)}">${esc(t.name)}</a>` : ""}${p.isGK ? ' <span class="badge-gk">GK</span>' : ""}${p.isCaptain ? ' <span class="badge-gk badge-cap">C</span>' : ""}</p></div></div>
+  return `<a class="back" href="${t ? "/tim/" + esc(t.id) : "/tim"}">← ${esc(t?.name || "Tim")}</a>
+    <div class="ph"><div class="ph-top"><span class="ph-no">${p.number ?? ""}</span><div><h2>${esc(p.name)}</h2><p>${t ? `<a class="plink" href="/tim/${esc(t.id)}">${esc(t.name)}</a>` : ""}${p.isGK ? ' <span class="badge-gk">GK</span>' : ""}${p.isCaptain ? ' <span class="badge-gk badge-cap">C</span>' : ""}</p></div></div>
     <div class="sgrid">${boxes.join("")}</div></div>
     <div class="head"><h2>Riwayat laga</h2></div><div class="sheet">${hist}</div>${footer}`;
 }
@@ -572,14 +593,14 @@ function juaraView() {
   const goals = state.events.filter((e) => e.type === "goal" || e.type === "own_goal").length;
   const cards = (ty) => state.events.filter((e) => e.type === ty).length;
   const gk = state.playerById[state.settings.bestGkId];
-  const place = (label, id) => id ? `<a class="podrow" href="#/tim/${esc(id)}">${badge(state.teamById[id], true)}<span><small>${label}</small><b>${esc(tName(id))}</b></span></a>` : "";
-  const top = (key, label) => { const p = topBy(stats, key, 1)[0]; return `<div class="aw"><small>${label}</small><b>${p ? `<a class="plink" href="#/pemain/${esc(p.id)}">${esc(p.name)}</a>` : "–"}</b><span>${p ? `${esc(tName(p.teamId))} · ${p[key]}` : "Belum ada"}</span></div>`; };
+  const place = (label, id) => id ? `<a class="podrow" href="/tim/${esc(id)}">${badge(state.teamById[id], true)}<span><small>${label}</small><b>${esc(tName(id))}</b></span></a>` : "";
+  const top = (key, label) => { const p = topBy(stats, key, 1)[0]; return `<div class="aw"><small>${label}</small><b>${p ? `<a class="plink" href="/pemain/${esc(p.id)}">${esc(p.name)}</a>` : "–"}</b><span>${p ? `${esc(tName(p.teamId))} · ${p[key]}` : "Belum ada"}</span></div>`; };
   const hero = info
     ? `<div class="champ"><small>Juara</small>${badge(state.teamById[info.champion], false, "lg")}<h2>${esc(tName(info.champion))}</h2>
-        <p>Final: ${esc(sideName(info.fin, "A"))} ${info.fin.scoreA ?? 0} – ${info.fin.scoreB ?? 0} ${esc(sideName(info.fin, "B"))}${penNote(info.fin)}</p><a class="tprofile" href="#/laga/${esc(info.fin.id)}">Lihat laga final →</a></div>
+        <p>Final: ${esc(sideName(info.fin, "A"))} ${info.fin.scoreA ?? 0} – ${info.fin.scoreB ?? 0} ${esc(sideName(info.fin, "B"))}${penNote(info.fin)}</p><a class="tprofile" href="/laga/${esc(info.fin.id)}">Lihat laga final →</a></div>
        <div class="podium">${place("Runner-up", info.runnerUp)}</div>`
     : `<div class="champ idle"><h2>Turnamen belum selesai</h2><p>Halaman ini menampilkan juara setelah final selesai. Sementara itu, arsip hasil di bawah terus bertambah.</p></div>`;
-  const awards = `<div class="awards">${top("goals", "Top scorer")}${top("assists", "Top assist")}<div class="aw"><small>Kiper terbaik</small><b>${gk ? `<a class="plink" href="#/pemain/${esc(gk.id)}">${esc(gk.name)}</a>` : "–"}</b><span>${gk ? esc(tName(gk.teamId)) : "Dipilih panitia"}</span></div></div>`;
+  const awards = `<div class="awards">${top("goals", "Top scorer")}${top("assists", "Top assist")}<div class="aw"><small>Kiper terbaik</small><b>${gk ? `<a class="plink" href="/pemain/${esc(gk.id)}">${esc(gk.name)}</a>` : "–"}</b><span>${gk ? esc(tName(gk.teamId)) : "Dipilih panitia"}</span></div></div>`;
   const nums = `<div class="sgrid">${sbox(done.length, "Laga")}${sbox(goals, "Gol")}${sbox(done.length ? (goals / done.length).toFixed(1) : "0", "Gol per laga")}${sbox(cards("yellow"), "Kuning")}${sbox(cards("red"), "Merah")}</div>`;
   const order = ["final", "sf", "qf"];
   const arch = order.map((st) => ({ st, l: done.filter((m) => m.stage === st).sort((a, b) => sortByKickoff(b, a)) })).filter((x) => x.l.length)
@@ -695,7 +716,7 @@ function htScore(m, events) {
 
 function matchView(r) {
   const m = state.matchById[r.id];
-  if (!m) return `<a class="back" href="#/">← Beranda</a><div class="sheet"><p class="empty">Pertandingan tidak ditemukan.</p></div>`;
+  if (!m) return `<a class="back" href="/">← Beranda</a><div class="sheet"><p class="empty">Pertandingan tidak ditemukan.</p></div>`;
   const tab = ["lineup", "statistik"].includes(r.tab) ? r.tab : "ringkasan";
   const A = state.teamById[m.teamA], B = state.teamById[m.teamB];
   const events = state.events.filter((e) => e.matchId === m.id);
@@ -713,7 +734,7 @@ function matchView(r) {
     <div class="scorers"><div>${scorersList(m, "A")}</div><div>${scorersList(m, "B")}</div></div></div>`;
 
   const tabs = `<div class="tabs">${[["ringkasan", "Ringkasan"], ["lineup", "Line up"], ["statistik", "Statistik"]]
-    .map(([k, l]) => `<a class="${tab === k ? "on" : ""}" href="#/laga/${esc(m.id)}${k === "ringkasan" ? "" : "/" + k}">${l}</a>`).join("")}</div>`;
+    .map(([k, l]) => `<a class="${tab === k ? "on" : ""}" href="/laga/${esc(m.id)}${k === "ringkasan" ? "" : "/" + k}">${l}</a>`).join("")}</div>`;
 
   let body = "";
   if (tab === "ringkasan") {
@@ -758,7 +779,7 @@ function matchView(r) {
     return [...suspendedIn(m, t, state.matches, state.events, state.players, state.settings.suspOverrides || {}).values()].map((o) => `<li><b>${esc(pName(o.playerId))}</b> (${esc(sideName(m, side))}): ${esc(suspReason(o))}</li>`);
   });
   const suspBox = susp.length ? `<div class="sheet susp-pub"><h3>Skorsing</h3><ul>${susp.join("")}</ul><p class="note">Pemain di atas tidak boleh bermain di laga ini.</p></div>` : "";
-  return `<a class="back" href="#/">← Kembali</a>${head}${suspBox}${tabs}${body}${motm}`;
+  return `<a class="back" href="/">← Kembali</a>${head}${suspBox}${tabs}${body}${motm}`;
 }
 
 // ---------- Render ----------
@@ -836,7 +857,7 @@ function render() {
       default: html = homeView();
     }
   }
-  const key = location.hash;
+  const key = location.pathname;
   if (html !== lastHtml || key !== lastKey) {
     const routeChanged = key !== lastKey;
     $app.innerHTML = html;
@@ -848,8 +869,34 @@ function render() {
     const el = document.getElementById("today-anchor");
     if (el) setTimeout(() => el.scrollIntoView({ block: "start" }), 0);
   }
+  const METAS = {
+    jadwal: ["Jadwal Pertandingan IBFL 2026", "Jadwal lengkap pertandingan Industropolis Batang Futsal League (IBFL) 2026: waktu kick-off, babak grup, dan babak gugur di Sagara Futsal Arena, KEK Industropolis Batang."],
+    klasemen: ["Klasemen IBFL 2026", "Klasemen grup Industropolis Batang Futsal League (IBFL) 2026: poin, selisih gol, dan tim yang lolos ke perempat final."],
+    bagan: ["Bagan Babak Gugur IBFL 2026", "Bagan perempat final, semifinal, dan final Industropolis Batang Futsal League (IBFL) 2026."],
+    statistik: ["Statistik Pemain IBFL 2026", "Top scorer, top assist, kartu, dan statistik pemain Industropolis Batang Futsal League (IBFL) 2026."],
+    tim: ["Daftar Tim dan Pemain IBFL 2026", "16 tim peserta Industropolis Batang Futsal League (IBFL) 2026 beserta daftar pemain dan official."],
+    juara: ["Juara dan Arsip IBFL 2026", "Juara, peraih penghargaan, dan arsip Industropolis Batang Futsal League (IBFL) 2026."],
+  };
+  const mt = METAS[r.name];
+  const pageTitle = mt ? `${mt[0]} | ${TOURNAMENT.name}` : document.title;
+  const pageDesc = mt ? mt[1] : null;
+  const canonPath = mt || r.name === "home" ? (r.name === "home" ? "/" : "/" + r.name) : location.pathname;
+  const setMeta = (sel, attr, val) => { const el = document.querySelector(sel); if (el && val) el.setAttribute(attr, val); };
+  const url = location.origin + canonPath;
+  setMeta('link[rel="canonical"]', "href", url);
+  setMeta('meta[property="og:url"]', "content", url);
+  if (r.name === "home") {
+    setMeta('meta[name="description"]', "content", HOME_DESC);
+  } else if (pageDesc) {
+    setMeta('meta[name="description"]', "content", pageDesc);
+    setMeta('meta[property="og:title"]', "content", pageTitle);
+    setMeta('meta[property="og:description"]', "content", pageDesc);
+    setMeta('meta[name="twitter:title"]', "content", pageTitle);
+    setMeta('meta[name="twitter:description"]', "content", pageDesc);
+  }
   const titles = { home: "", jadwal: "Jadwal · ", klasemen: "Klasemen · ", bagan: "Bagan · ", statistik: "Statistik · ", tim: "Tim · ", laga: "Pertandingan · " };
-  document.title = (titles[r.name] ?? "") + TOURNAMENT.name;
+  // Beranda memakai judul penuh yang sama dengan index.html (supaya hasil Google konsisten); halaman lain: "Jadwal · nama turnamen"
+  document.title = mt ? pageTitle : r.name === "home" ? `${TOURNAMENT.short} · ${TOURNAMENT.name} | Live Score` : (titles[r.name] ?? "") + TOURNAMENT.name;
 }
 
 // Interaksi (delegasi event)
@@ -885,7 +932,6 @@ setInterval(() => {
   });
 }, 1000);
 
-window.addEventListener("hashchange", () => { subOpen = false; setMenu(false, { focus: false }); startSkeleton(); render(); });
 onChange(render);
 syncServerTime().then(() => { lastHtml = ""; render(); });
 setInterval(syncServerTime, 5 * 60 * 1000);
