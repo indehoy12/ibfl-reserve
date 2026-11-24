@@ -179,6 +179,13 @@ Lewat **Tempel banyak pemain**, tambahkan kata `c` atau `kapten` (mis. `7, Andi,
 Disimpan di dokumen pemain sebagai `isCaptain`; tidak perlu mengubah aturan Firestore untuk fitur ini.
 
 
+## Backup & unduh data
+Admin → Pengaturan → **Backup & unduh data**.
+- **Unduh backup (.json)**: salinan mentah semua koleksi (tim, pemain, pertandingan, kejadian gol/kartu, pengaturan, termasuk logo). Dibaca dari data yang sudah tersinkron di layar, jadi tidak menambah baca Firestore.
+- **Unduh semua (.zip)**: berisi file backup JSON, laporan Excel, CSV tiap lembar laporan (klasemen, jadwal & hasil, kejadian, top scorer, kartu, kiper, statistik), dan CSV data mentah.
+- **Pulihkan dari file backup**: pilih file .json, periksa ringkasannya, ketik PULIHKAN. Backup kondisi sekarang otomatis diunduh dulu sebagai pengaman. Opsi *Ganti total* menghapus data yang tidak ada di file backup; tanpa opsi itu data hanya ditimpa/ditambah.
+Kode ada di `js/admin.js` (bagian "Backup & unduh semua data") dan `js/exporter.js` (`zipBlob`, `toCsv`).
+
 ## Ekspor ke Excel
 Admin → Pengaturan → **Ekspor ke Excel** → Unduh. Satu file .xlsx berisi lembar Klasemen, Jadwal & hasil, Kejadian, Top scorer, Kartu & skorsing, dan Kiper. File dibuat di browser (`js/exporter.js`), tanpa library luar.
 

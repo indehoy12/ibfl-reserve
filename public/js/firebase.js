@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
   getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc,
-  writeBatch, increment, serverTimestamp, getDoc, getDocs, query, orderBy, where, deleteField,
+  writeBatch, increment, serverTimestamp, getDoc, getDocs, query, orderBy, where, deleteField, Timestamp,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
@@ -35,6 +35,6 @@ export const auth = getAuth(app);
 
 export {
   collection, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, writeBatch, increment,
-  serverTimestamp, getDoc, getDocs, query, orderBy, where, deleteField,
+  serverTimestamp, getDoc, getDocs, query, orderBy, where, deleteField, Timestamp,
   signInWithEmailAndPassword, signOut, onAuthStateChanged,
 };

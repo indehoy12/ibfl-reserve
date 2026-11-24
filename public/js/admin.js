@@ -1,12 +1,12 @@
 // Panel admin Industropolis Batang Futsal League. Hanya akun yang terdaftar di firestore.rules yang bisa menulis data.
 import {
   db, auth, collection, doc, setDoc, updateDoc, deleteDoc, writeBatch, increment, deleteField,
-  signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged, Timestamp,
 } from "./firebase.js";
 import { state, startStore, onChange, isReady } from "./store.js";
 import { parseFile, buildPlan, buildOps, LIMITS } from "./importer.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
-import { buildXlsx } from "./exporter.js";
+import { buildXlsx, zipBlob, toCsv } from "./exporter.js";
 import { logoOf } from "./logos.js";
 import { byEntry } from "./util.js";
 import {
@@ -229,7 +229,7 @@ const NAV = [
   { title: "Dashboard", items: [["dashboard", "Ringkasan"]] },
   { title: "Pertandingan", items: [["matches", "Semua pertandingan"], ["match-add", "Tambah pertandingan"]] },
   { title: "Tim & Pemain", items: [["teams", "Daftar tim"], ["group-setup", "Susun grup"], ["team-stats", "Statistik tim"], ["team-add", "Tambah tim"]] },
-  { title: "Pengaturan", items: [["set-announce", "Pengumuman"], ["set-timing", "Durasi pertandingan"], ["set-keeper", "Kiper terbaik"], ["set-export", "Ekspor ke Excel"], ["set-reset", "Hapus data"]] },
+  { title: "Pengaturan", items: [["set-announce", "Pengumuman"], ["set-timing", "Durasi pertandingan"], ["set-keeper", "Kiper terbaik"], ["set-backup", "Backup & unduh data"], ["set-export", "Ekspor ke Excel"], ["set-reset", "Hapus data"]] },
 ];
 const NAV_ALIAS = { match: "matches", team: "teams", player: "teams", settings: "set-announce" };
 const navGroup = (key) => NAV.find((g) => g.items.some(([k]) => k === key));
@@ -1089,6 +1089,85 @@ function exportSheets() {
   stats.filter((p) => p.role !== "official").sort((a, b) => tName(a.teamId).localeCompare(tName(b.teamId), "id") || (a.number ?? 999) - (b.number ?? 999)).forEach((p) => pstat.push([p.name, tName(p.teamId), p.number ?? "", p.goals, p.assists, p.yellow, p.red]));
   return [{ name: "Klasemen", rows: klasemen }, { name: "Jadwal & hasil", rows: jadwal }, { name: "Kejadian", rows: kejadian }, { name: "Top scorer", rows: scorer }, { name: "Kartu & skorsing", rows: kartu }, { name: "Kiper", rows: kiper }, { name: "Statistik tim", rows: tstat }, { name: "Statistik pemain", rows: pstat }];
 }
+// ---------- Backup & unduh semua data ----------
+// Backup = salinan mentah semua koleksi Firestore (tim, pemain, pertandingan, kejadian/gol/kartu, pengaturan) dalam satu file JSON.
+// Dibaca dari data yang sudah tersinkron di layar, jadi tidak menambah jumlah baca Firestore.
+const BK_KEY = "ifl-last-backup";
+let backupState = null; // { fileName, data, replace }
+const stamp2 = () => { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`; };
+const bkSer = (v) => {
+  if (v && typeof v === "object") {
+    if (typeof v.toMillis === "function" && "seconds" in v) return { __ts: v.toMillis() };
+    return Array.isArray(v) ? v.map(bkSer) : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, bkSer(x)]));
+  }
+  return v === undefined ? null : v;
+};
+const bkDe = (v) => {
+  if (v && typeof v === "object") {
+    if (!Array.isArray(v) && Object.keys(v).length === 1 && typeof v.__ts === "number") return Timestamp.fromMillis(v.__ts);
+    return Array.isArray(v) ? v.map(bkDe) : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, bkDe(x)]));
+  }
+  return v;
+};
+function backupData() {
+  const col = (list) => list.map((x) => bkSer(x));
+  return {
+    app: "ifl-website", version: 1, exportedAt: new Date().toISOString(),
+    counts: { teams: state.teams.length, players: state.players.length, matches: state.matches.length, events: state.events.length },
+    settings: bkSer(state.settings || {}),
+    teams: col(state.teams), players: col(state.players), matches: col(state.matches), events: col(state.events),
+  };
+}
+function saveBlob(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+}
+function markBackup() { try { localStorage.setItem(BK_KEY, new Date().toISOString()); } catch (e) { /* abaikan */ } }
+function lastBackupText() {
+  let t = null;
+  try { t = localStorage.getItem(BK_KEY); } catch (e) { /* abaikan */ }
+  if (!t) return "Belum pernah backup dari browser ini.";
+  const d = new Date(t);
+  return `Backup terakhir dari browser ini: ${d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}, ${d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}.`;
+}
+// CSV mentah: satu baris per dokumen, semua kolom. Logo (gambar base64) dilewati karena ada di file JSON.
+function rawCsv(list, skip = ["logoUrl"]) {
+  const keys = ["id"];
+  list.forEach((x) => Object.keys(x).forEach((k) => { if (!keys.includes(k) && !skip.includes(k)) keys.push(k); }));
+  return toCsv([keys, ...list.map((x) => keys.map((k) => { const v = bkSer(x[k]); return v && typeof v === "object" ? JSON.stringify(v) : v; }))]);
+}
+const safeName = (n) => String(n).replace(/[\\/:*?"<>|&]+/g, "-").replace(/\s+/g, " ").trim();
+function backupView() {
+  const n = { t: state.teams.length, p: state.players.length, m: state.matches.length, e: state.events.length };
+  const goals = state.events.filter((e) => e.type === "goal" || e.type === "own_goal").length;
+  const bs = backupState;
+  let restore;
+  if (bs) {
+    const c = bs.data.counts || {};
+    restore = `<div class="panel okbox"><h2 class="a">Siap dipulihkan: ${esc(bs.fileName)}</h2>
+      <p class="hint">Dibuat ${bs.data.exportedAt ? esc(new Date(bs.data.exportedAt).toLocaleString("id-ID")) : "(waktu tidak tercatat)"}. Isi: <b>${c.teams ?? bs.data.teams.length}</b> tim, <b>${c.players ?? bs.data.players.length}</b> pemain, <b>${c.matches ?? bs.data.matches.length}</b> pertandingan, <b>${c.events ?? bs.data.events.length}</b> kejadian.</p>
+      <label class="check"><input type="checkbox" data-restore-replace ${bs.replace ? "checked" : ""}> Ganti total: hapus data yang sekarang ada tapi tidak ada di file backup</label>
+      <p class="hint">${bs.replace ? "Data sekarang yang tidak ada di backup akan <b>dihapus</b>, sehingga hasilnya sama persis dengan isi file." : "Data di file backup akan menimpa data dengan ID yang sama. Data lain yang sudah ada dibiarkan."} Sebelum memulihkan, backup kondisi sekarang otomatis diunduh dulu sebagai pengaman.</p>
+      <div class="btns"><button class="btn danger" data-act="restore-run">Pulihkan data</button><button class="btn ghost" data-act="restore-clear">Batal</button></div></div>`;
+  } else {
+    restore = `<div class="panel dz"><h2 class="a">Pulihkan dari file backup</h2>
+      <p class="hint">Pilih file <code>.json</code> hasil backup di atas. Kamu masih bisa memeriksa isinya dulu sebelum benar-benar dipulihkan.</p>
+      <input id="restorefile" type="file" accept=".json,application/json" data-restore-file></div>`;
+  }
+  return `<h1 class="page">Backup &amp; unduh data</h1>
+    <p class="lead">Simpan salinan seluruh data turnamen: tim, pemain, jadwal, skor, gol, assist, kartu, dan pengaturan. Sekarang ada <b>${n.t}</b> tim, <b>${n.p}</b> pemain, <b>${n.m}</b> pertandingan, <b>${n.e}</b> kejadian (<b>${goals}</b> gol).</p>
+    <div class="panel"><h2 class="a">Backup lengkap (JSON)</h2>
+      <p class="hint">Satu file berisi semua data mentah, termasuk logo tim. Inilah file yang dipakai untuk memulihkan database. ${esc(lastBackupText())}</p>
+      <div class="btns"><button class="btn orange big" data-act="backup-json">Unduh backup (.json)</button></div></div>
+    <div class="panel"><h2 class="a">Unduh semua data (ZIP)</h2>
+      <p class="hint">Satu file ZIP berisi: file backup JSON, laporan Excel (klasemen, jadwal &amp; hasil, gol dan kartu, top scorer, kiper, statistik), CSV untuk tiap lembar laporan, dan CSV data mentah (tim, pemain, pertandingan, kejadian). Cocok untuk arsip akhir turnamen atau dibuka di Excel / Google Sheets.</p>
+      <div class="btns"><button class="btn orange big" data-act="backup-zip">Unduh semua (.zip)</button></div></div>
+    ${restore}
+    <p class="hint">Saran: unduh backup setiap selesai hari pertandingan dan simpan di dua tempat (misalnya HP dan Google Drive). Bila kuota harian Firestore habis atau data terhapus tidak sengaja, file ini yang menyelamatkan.</p>`;
+}
 function resetView() {
   const nM = state.matches.length, nE = state.events.length, nT = state.teams.length, nP = state.players.length;
   return `<h1 class="page">Hapus data</h1>
@@ -1105,7 +1184,7 @@ function resetView() {
 let pending = false;
 let lastBar = "", lastKey = "", enterTimer;
 // Skeleton shimmer: saat data belum siap dan sekilas tiap pindah halaman
-const SKEL_KIND = { matches: "list", "match-add": "form", teams: "grid", "team-stats": "list", player: "list", team: "form", "team-add": "form", "group-setup": "grid", settings: "form", "set-announce": "form", "set-timing": "form", "set-keeper": "cards", "set-reset": "form", match: "pos" };
+const SKEL_KIND = { matches: "list", "match-add": "form", teams: "grid", "team-stats": "list", player: "list", team: "form", "team-add": "form", "group-setup": "grid", settings: "form", "set-announce": "form", "set-timing": "form", "set-keeper": "cards", "set-reset": "form", "set-backup": "form", match: "pos" };
 let skelOn = false, skelTimer;
 function startSkeleton() { skelOn = true; clearTimeout(skelTimer); skelTimer = setTimeout(() => { skelOn = false; render(); }, 350); }
 function showSkel(r) {
@@ -1145,6 +1224,7 @@ function render() {
   else if (r.name === "player") h = playerAdminView(r.id);
   else if (r.name === "set-timing") h = timingView();
   else if (r.name === "set-keeper") h = keeperView();
+  else if (r.name === "set-backup") h = backupView();
   else if (r.name === "set-export") h = exportView();
   else if (r.name === "set-reset") h = resetView();
   else if (r.name === "set-announce" || r.name === "settings") h = announceView();
@@ -1331,6 +1411,56 @@ const actions = {
     if (!(await confirmBox(`Akhiri laga ${sideName(m, "A")} ${a} – ${b} ${sideName(m, "B")}?\nHasil akan masuk klasemen.${early}`, { title: "Akhiri pertandingan?", ok: "Ya, akhiri laga" }))) return;
     await updateDoc(matchRef(id), { status: "ft", scoreA: a, scoreB: b, clock: stopClock(elapsedSec(m)), pause: null, addedMin: 0, correcting: false });
     ui.sheet = null;
+  },
+  async "backup-json"() {
+    const data = backupData();
+    saveBlob(new Blob([JSON.stringify(data)], { type: "application/json" }), `ifl-backup-${stamp2()}.json`);
+    markBackup();
+    toast("Backup JSON diunduh");
+  },
+  async "backup-zip"() {
+    const data = backupData(), day = stamp2();
+    const files = [[`ifl-backup-${day}.json`, JSON.stringify(data)]];
+    const sheets = exportSheets();
+    files.push([`laporan-ifl-${day}.xlsx`, new Uint8Array(await buildXlsx(sheets).arrayBuffer())]);
+    sheets.forEach((sh) => files.push([`csv-laporan/${safeName(sh.name)}.csv`, toCsv(sh.rows)]));
+    files.push(["csv-mentah/tim.csv", rawCsv(state.teams)], ["csv-mentah/pemain.csv", rawCsv(state.players)], ["csv-mentah/pertandingan.csv", rawCsv(state.matches)], ["csv-mentah/kejadian.csv", rawCsv(state.events)]);
+    files.push(["BACA-SAYA.txt", `Arsip data Industropolis Batang Futsal League\nDiunduh: ${new Date().toLocaleString("id-ID")}\n\n- ifl-backup-*.json : backup lengkap, dipakai untuk Pulihkan di Admin -> Pengaturan -> Backup & unduh data\n- laporan-ifl-*.xlsx : laporan Excel siap baca\n- csv-laporan/ : isi tiap lembar laporan dalam CSV (klasemen, jadwal & hasil, kejadian gol dan kartu, top scorer, dst.)\n- csv-mentah/ : data mentah per koleksi (kolom apa adanya dari database; logo tim hanya ada di file JSON)\n`]);
+    saveBlob(zipBlob(files), `ifl-semua-data-${day}.zip`);
+    markBackup();
+    toast("ZIP semua data diunduh");
+  },
+  async "restore-clear"() { backupState = null; },
+  async "restore-run"() {
+    const bs = backupState;
+    if (!bs) throw new Error("Pilih file backup dulu.");
+    const d = bs.data;
+    const msg = bs.replace
+      ? `Database akan disamakan persis dengan file "${bs.fileName}": ${d.teams.length} tim, ${d.players.length} pemain, ${d.matches.length} pertandingan, ${d.events.length} kejadian. Data sekarang yang tidak ada di file akan dihapus.`
+      : `${d.teams.length} tim, ${d.players.length} pemain, ${d.matches.length} pertandingan, dan ${d.events.length} kejadian dari "${bs.fileName}" akan ditulis ke database dan menimpa data dengan ID yang sama.`;
+    if (!(await typeConfirm(msg, "PULIHKAN", { title: "Pulihkan data dari backup?", ok: "Ya, pulihkan" }))) return;
+    // pengaman: simpan kondisi sekarang dulu
+    saveBlob(new Blob([JSON.stringify(backupData())], { type: "application/json" }), `ifl-sebelum-pemulihan-${stamp2()}.json`);
+    const writes = [];
+    const put = (name, list) => list.forEach((x) => { const { id, ...rest } = x; writes.push({ ref: doc(db, name, String(id)), data: bkDe(rest) }); });
+    put("teams", d.teams); put("players", d.players); put("matches", d.matches); put("events", d.events);
+    writes.push({ ref: doc(db, "settings", "main"), data: bkDe(d.settings || {}) });
+    for (let i = 0; i < writes.length; i += 400) {
+      const b = writeBatch(db);
+      writes.slice(i, i + 400).forEach((w) => b.set(w.ref, w.data));
+      await b.commit();
+    }
+    let removed = 0;
+    if (bs.replace) {
+      const keep = (list) => new Set(list.map((x) => String(x.id)));
+      const k = { teams: keep(d.teams), players: keep(d.players), matches: keep(d.matches), events: keep(d.events) };
+      const extra = [];
+      for (const name of Object.keys(k)) state[name].forEach((x) => { if (!k[name].has(String(x.id))) extra.push(doc(db, name, x.id)); });
+      await deleteMany(extra);
+      removed = extra.length;
+    }
+    backupState = null;
+    toast(`Data dipulihkan: ${writes.length} dokumen ditulis${removed ? `, ${removed} dihapus` : ""}`);
   },
   async "export-xlsx"() {
     const blob = buildXlsx(exportSheets());
@@ -2079,6 +2209,28 @@ document.addEventListener("change", (e) => {
     act(async () => { const lg = await fileToLogo(file); await updateDoc(doc(db, "teams", id), { logoUrl: lg.url, logoWide: lg.wide, logoRatio: lg.ratio, logoId: "upload" }); if (lg.lowRes) toast("Logo tersimpan, tapi resolusinya kecil dan mungkin tampak buram. Minta file yang lebih besar ke tim.", true); }, "Logo tersimpan").finally(render);
     return;
   }
+});
+
+// Pilih file backup untuk dipulihkan: diperiksa dulu, belum ditulis ke database.
+document.addEventListener("change", async (e) => {
+  const t = e.target;
+  if (t.matches?.("[data-restore-replace]") && backupState) { backupState.replace = t.checked; render(); return; }
+  if (!t.matches?.("[data-restore-file]")) return;
+  const file = t.files?.[0];
+  if (!file) return;
+  try {
+    if (file.size > 40 * 1024 * 1024) throw new Error("File terlalu besar untuk file backup.");
+    let data;
+    try { data = JSON.parse(await file.text()); } catch (err) { throw new Error("File bukan JSON yang valid."); }
+    if (!data || data.app !== "ifl-website" || !["teams", "players", "matches", "events"].every((k) => Array.isArray(data[k]))) throw new Error("Ini bukan file backup website IFL.");
+    const bad = ["teams", "players", "matches", "events"].find((k) => data[k].some((x) => !x || typeof x.id !== "string" || !x.id || x.id.includes("/")));
+    if (bad) throw new Error(`Ada data ${bad} tanpa ID yang sah. File mungkin rusak.`);
+    backupState = { fileName: file.name, data, replace: false };
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "File backup tidak bisa dibaca", true);
+  }
+  render();
 });
 
 // Jam LIVE bergerak tiap detik
