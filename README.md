@@ -179,9 +179,36 @@ Lewat **Tempel banyak pemain**, tambahkan kata `c` atau `kapten` (mis. `7, Andi,
 Disimpan di dokumen pemain sebagai `isCaptain`; tidak perlu mengubah aturan Firestore untuk fitur ini.
 
 
+## Database: Supabase (paket gratis)
+Data (tim, pemain, laga, gol/kartu, pengaturan) disimpan di Supabase. Isi website dan panel admin tidak berubah; hanya lapisan data (`js/supabase.js`, dipanggil lewat `js/firebase.js`) yang baru. Versi Firestore lama disimpan di `legacy/` untuk rollback.
+
+### Pasang dari nol
+1. Daftar di supabase.com, **New project**. Pilih region terdekat (mis. Singapore) dan simpan password database.
+2. **SQL Editor → New query**, tempel isi `supabase/schema.sql`, **Run**. Ini membuat tabel, aturan keamanan (RLS), fungsi tulis, dan realtime. Aman dijalankan ulang.
+3. **Authentication → Users → Add user**: isi email dan password admin, centang *Auto Confirm User*. Salin **User UID**, lalu di SQL Editor jalankan:
+   `insert into public.admins (uid) values ('UID-ADMIN') on conflict do nothing;`
+   Lalu matikan pendaftaran pengguna baru di pengaturan Authentication supaya orang lain tidak bisa membuat akun.
+4. **Project Settings → API**: salin *Project URL* dan kunci *anon* (atau *publishable*) ke `public/js/supabase-config.js`. Jangan pernah memasukkan kunci *service_role* / *secret*.
+5. Deploy ke alamat percobaan dulu (deploy preview / cabang Netlify), jangan langsung ke alamat utama.
+
+### Pindahkan data dari Firebase
+1. Di situs **lama** (masih Firebase, versi yang sudah punya menu *Backup & unduh data*): Admin → Pengaturan → Backup & unduh data → **Unduh backup (.json)**. Lakukan ini sebelum situs diganti.
+2. Di situs **baru**: login admin → Backup & unduh data → **Pulihkan dari file backup** → pilih file .json → ketik `PULIHKAN`. ID semua dokumen ikut terbawa, jadi relasi tim, pemain, laga, dan gol tetap utuh.
+3. Cocokkan jumlah tim, pemain, pertandingan, dan kejadian di halaman itu dengan situs lama. Buka juga halaman publik di dua HP dan catat satu gol uji dari admin untuk memastikan realtime jalan.
+4. Setelah yakin, arahkan alamat utama ke versi baru.
+
+### Rollback ke Firebase
+Salin `legacy/firebase-firestore.js` menjadi `public/js/firebase.js`, dan `legacy/firestore.rules` ke `firestore.rules` bila perlu. Data Firebase lama tidak dihapus oleh langkah apa pun di atas.
+
+### Batas paket gratis yang perlu diingat
+- Proyek **di-pause setelah sekitar 7 hari tanpa aktivitas**. `.github/workflows/keepalive.yml` memanggil database tiap 2 hari; isi secret `SUPABASE_URL` dan `SUPABASE_ANON_KEY` di GitHub (petunjuk ada di file itu). Bila sempat ter-pause, buka dashboard Supabase lalu **Restore project**.
+- Koneksi realtime bersamaan maksimal **200** (kira-kira 200 penonton yang membuka halaman pada saat yang sama), dan bandwidth keluar **5 GB per bulan**. Logo tim disimpan terpisah dan di-cache di browser untuk menghemat bandwidth.
+- Paket gratis **tidak punya backup otomatis**. Unduh backup setiap selesai hari pertandingan.
+- Cek pemakaian di Supabase Dashboard → Usage secara berkala.
+
 ## Backup & unduh data
 Admin → Pengaturan → **Backup & unduh data**.
-- **Unduh backup (.json)**: salinan mentah semua koleksi (tim, pemain, pertandingan, kejadian gol/kartu, pengaturan, termasuk logo). Dibaca dari data yang sudah tersinkron di layar, jadi tidak menambah baca Firestore.
+- **Unduh backup (.json)**: salinan mentah semua koleksi (tim, pemain, pertandingan, kejadian gol/kartu, pengaturan, termasuk logo). Dibaca dari data yang sudah tersinkron di layar, jadi tidak menambah permintaan ke database.
 - **Unduh semua (.zip)**: berisi file backup JSON, laporan Excel, CSV tiap lembar laporan (klasemen, jadwal & hasil, kejadian, top scorer, kartu, kiper, statistik), dan CSV data mentah.
 - **Pulihkan dari file backup**: pilih file .json, periksa ringkasannya, ketik PULIHKAN. Backup kondisi sekarang otomatis diunduh dulu sebagai pengaman. Opsi *Ganti total* menghapus data yang tidak ada di file backup; tanpa opsi itu data hanya ditimpa/ditambah.
 Kode ada di `js/admin.js` (bagian "Backup & unduh semua data") dan `js/exporter.js` (`zipBlob`, `toCsv`).

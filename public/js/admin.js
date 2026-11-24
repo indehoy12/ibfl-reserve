@@ -34,10 +34,11 @@ function toast(msg, err = false) {
   toastTimer = setTimeout(() => ($toast.hidden = true), err ? 6000 : 2200);
 }
 function errMsg(e) {
-  if (e?.code === "permission-denied") return "Ditolak: akun ini belum diizinkan menulis. Cek UID admin di firestore.rules (lihat README).";
+  if (e?.code === "permission-denied") return "Ditolak: akun ini belum diizinkan menulis. Pastikan UID akun ada di tabel admins Supabase (lihat README).";
   if (e?.code === "auth/invalid-credential" || e?.code === "auth/wrong-password" || e?.code === "auth/user-not-found") return "Email atau password salah.";
   if (e?.code === "auth/too-many-requests") return "Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.";
   if (e?.code === "auth/network-request-failed") return "Tidak ada koneksi internet.";
+  if (e?.code === "unavailable") return "Database tidak bisa dihubungi. Cek koneksi internet lalu coba lagi.";
   return e?.message || "Terjadi kesalahan.";
 }
 async function act(fn, ok) {
@@ -1166,7 +1167,7 @@ function backupView() {
       <p class="hint">Satu file ZIP berisi: file backup JSON, laporan Excel (klasemen, jadwal &amp; hasil, gol dan kartu, top scorer, kiper, statistik), CSV untuk tiap lembar laporan, dan CSV data mentah (tim, pemain, pertandingan, kejadian). Cocok untuk arsip akhir turnamen atau dibuka di Excel / Google Sheets.</p>
       <div class="btns"><button class="btn orange big" data-act="backup-zip">Unduh semua (.zip)</button></div></div>
     ${restore}
-    <p class="hint">Saran: unduh backup setiap selesai hari pertandingan dan simpan di dua tempat (misalnya HP dan Google Drive). Bila kuota harian Firestore habis atau data terhapus tidak sengaja, file ini yang menyelamatkan.</p>`;
+    <p class="hint">Saran: unduh backup setiap selesai hari pertandingan dan simpan di dua tempat (misalnya HP dan Google Drive). Bila database bermasalah, pindah layanan, atau data terhapus tidak sengaja, file ini yang menyelamatkan.</p>`;
 }
 function resetView() {
   const nM = state.matches.length, nE = state.events.length, nT = state.teams.length, nP = state.players.length;

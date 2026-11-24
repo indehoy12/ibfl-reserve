@@ -1,0 +1,21 @@
+# Menjaga proyek Supabase gratis tidak di-pause karena sepi aktivitas (pause terjadi setelah ~7 hari tanpa aktivitas).
+# Cara pakai: GitHub repo -> Settings -> Secrets and variables -> Actions -> New repository secret:
+#   SUPABASE_URL      = https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY = kunci anon / publishable (yang sama dengan di js/supabase-config.js)
+# Catatan: GitHub menonaktifkan jadwal otomatis bila repositori tidak ada aktivitas 60 hari; aktifkan lagi dari tab Actions.
+name: keepalive-supabase
+on:
+  schedule:
+    - cron: "17 3 */2 * *"   # tiap 2 hari, 03:17 UTC
+  workflow_dispatch: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping database
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$URL" && test -n "$KEY" || { echo "Secret SUPABASE_URL / SUPABASE_ANON_KEY belum diisi"; exit 1; }
+          curl -fsS "$URL/rest/v1/settings?select=id&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY"
