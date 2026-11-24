@@ -3605,3 +3605,11 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
     transition: none;
   }
 }
+
+.scorebox .htnote {
+  text-align: center;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #cfd8ea;
+}

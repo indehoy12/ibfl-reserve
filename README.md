@@ -4,7 +4,7 @@ Tema visual mengikuti **warna logo perisai**: biru logo (`#2080D9` dan `#1969B4`
 
 Live score, jadwal, klasemen, line up, top scorer, top assist, dan kiper terbaik.
 
-**Urutan top scorer dan top assist** (`topBy` di `js/util.js`): angka utama terbanyak (gol / assist), lalu angka pendamping (top scorer: assist terbanyak; top assist: gol terbanyak). Jika masih sama, yang menang adalah pemain dari **tim yang bertahan paling jauh**: juara, lalu finalis, juara 3 / peringkat 4, semi final, perempat final, dan seterusnya. Tim yang masih bertanding selalu di atas tim yang sudah gugur di babak yang sama atau lebih awal. Abjad nama hanya dipakai bila semuanya masih sama persis, supaya urutan tidak berganti-ganti.
+**Urutan top scorer dan top assist** (`topBy` di `js/util.js`): angka utama terbanyak (gol / assist), lalu angka pendamping (top scorer: assist terbanyak; top assist: gol terbanyak). Jika masih sama, yang menang adalah pemain dari **tim yang bertahan paling jauh**: juara, lalu finalis, semi final, perempat final, dan seterusnya. Tim yang masih bertanding selalu di atas tim yang sudah gugur di babak yang sama atau lebih awal. Abjad nama hanya dipakai bila semuanya masih sama persis, supaya urutan tidak berganti-ganti.
 Hosting: **Netlify** (situs statis, tanpa build). Database & login admin: **Firebase** (Firestore + Authentication).
 
 ## Mengganti nama turnamen dan info umum
@@ -77,7 +77,7 @@ Buka `https://namasitus.netlify.app/admin/`, login, lalu:
 Sidebar kiri bercabang (di HP: tiga menu di bawah layar, cabangnya berupa tombol bulat di atas halaman):
 - **Pertandingan**: Semua pertandingan, Tambah pertandingan
 - **Tim & Pemain**: Daftar tim (ketuk tim untuk ubah info, logo, pemain, official), Tambah tim
-- **Pengaturan**: Pengumuman, Durasi pertandingan, Kiper terbaik, Hapus data (hapus semua pertandingan / hapus semua tim, dengan konfirmasi mengetik HAPUS; tim baru bisa dihapus semua setelah semua pertandingan dihapus)
+- **Pengaturan**: Pengumuman, Durasi pertandingan (grup, babak gugur QF/SF, Final terpisah, perpanjangan waktu), Kiper terbaik, Hapus data (hapus semua pertandingan / hapus semua tim, dengan konfirmasi mengetik HAPUS; tim baru bisa dihapus semua setelah semua pertandingan dihapus)
 
 ## Saat pertandingan berlangsung (sistem kasir)
 Admin → Pertandingan → Semua pertandingan → **Kelola** laga. Urutannya sengaja dikunci:
@@ -181,3 +181,17 @@ Disimpan di dokumen pemain sebagai `isCaptain`; tidak perlu mengubah aturan Fire
 
 ## Ekspor ke Excel
 Admin → Pengaturan → **Ekspor ke Excel** → Unduh. Satu file .xlsx berisi lembar Klasemen, Jadwal & hasil, Kejadian, Top scorer, Kartu & skorsing, dan Kiper. File dibuat di browser (`js/exporter.js`), tanpa library luar.
+
+
+## Babak gugur: pengisian otomatis dan validasi tim
+- Setelah semua laga satu grup berstatus FT, juara dan runner-up grup itu **otomatis dimasukkan ke slot QF yang masih kosong**. Pemenang QF dan SF juga otomatis masuk ke SF dan Final. Syaratnya jadwal laga QF/SF/Final sudah dibuat (tim boleh kosong).
+- Pengisian otomatis **tidak menimpa** slot yang sudah berisi, jadi line up yang sudah disiapkan aman. Kartu **Isi pasangan sekarang** di halaman Pertandingan hanya muncul bila pengisian otomatis belum berhasil. Bila hasil laga dikoreksi sehingga pasangan seharusnya berubah, ganti tim secara manual lewat form laga (tim yang tidak berhak meminta konfirmasi) dan isi ulang line up.
+- Grup yang seri penuh tetap menunggu urutan manual lewat kartu "seri penuh".
+- Form laga fase gugur memisahkan tim **Berhak** (QF: peringkat 1-2 grup yang sudah selesai; SF: pemenang QF; Final: pemenang SF) dari **Tidak berhak**. Memilih tim yang tidak berhak (kasus darurat, mis. diskualifikasi) meminta konfirmasi. Satu tim tidak bisa dipakai dua kali di fase yang sama.
+- **Durasi Final** bisa diisi terpisah di Pengaturan → Durasi pertandingan. Kosong = ikut durasi QF/SF. Durasi tetap dibekukan saat laga dimulai.
+
+## Skorsing kartu
+- **Otomatis (memblokir line up):** kartu merah langsung, dan dua kuning di satu laga (dihitung kartu merah). Pemain absen 1 laga berikutnya timnya, termasuk lintas fase (QF ke SF, SF ke Final).
+- **Semi otomatis (hanya peringatan):** akumulasi 2 kuning di laga berbeda. Pemain tetap bisa masuk line up dan ditandai ⚠. Di panel Skorsing laga itu panitia memilih **Terapkan skorsing** (jadi berlaku seperti merah, tampil di website publik) atau **Abaikan**. Saat laga dimulai dengan pemain berperingatan di line up, admin diminta konfirmasi.
+- Kuning dari babak grup tidak dibawa ke babak gugur. Skorsing yang sudah terbentuk di laga grup terakhir tetap berlaku di laga gugur pertama.
+- Lama skorsing bisa ditambah (+1 laga) atau dibatalkan lewat panel Skorsing.

@@ -3353,3 +3353,48 @@ body.admin {
 .slotrow { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
 .slotno { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--court); color: #fff; font-family: var(--font-d); font-size: 16px; }
 .slotrow select { flex: 1; min-width: 0; }
+
+/* ---------- Ubah kejadian (gol, assist, kartu) ---------- */
+.editev {
+  display: grid;
+  gap: 6px;
+}
+.editev label {
+  margin-top: 8px;
+  font-weight: 700;
+}
+.editev select {
+  width: 100%;
+  min-height: 52px;
+  font-size: 17px;
+  border-radius: 12px;
+}
+.editev .form-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editev .evt-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.editev input[type="number"] {
+  width: 100%;
+  min-height: 52px;
+  font-size: 17px;
+  border-radius: 12px;
+}
+
+.addev {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e3e8f4;
+}
+.addev .subh {
+  font-family: var(--font-d);
+  font-size: 20px;
+  margin: 4px 0 2px;
+}

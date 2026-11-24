@@ -468,7 +468,7 @@ function baganView() {
     <section class="round r-sf" aria-label="Semifinal"><h3>Semifinal</h3><div class="rc">${b.sf.map((s) => bracketCard(s)).join("")}</div></section>
     <section class="round r-fn" aria-label="Final"><h3>Final</h3><div class="rc">${bracketCard(b.final, "final")}</div></section>
   </div>
-  <p class="note">Juara dan runner-up grup terisi otomatis setelah semua laga grupnya selesai. Laga seri di babak gugur ditentukan lewat adu penalti.</p>${footer}`;
+  <p class="note">Juara dan runner-up grup terisi otomatis setelah semua laga grupnya selesai. Laga seri di babak gugur dilanjutkan dengan perpanjangan waktu atau langsung adu penalti, sesuai keputusan panitia.</p>${footer}`;
 }
 
 // ---------- Statistik ----------
@@ -676,6 +676,23 @@ function h2hCard(m) {
   return `<div class="sheet h2h"><h3 style="font-family:var(--font-d);font-size:22px;padding:12px 16px 4px">Riwayat pertemuan</h3>${inner}</div>`;
 }
 
+/** Skor akhir babak 1 (HT) dari kejadian. Data lama tanpa cap babak dipisah lewat menit. Kosong bila belum/tidak ada babak 2. */
+function htScore(m, events) {
+  const c = m.cfg || {};
+  if (m.wo || m.status === "scheduled" || (c.halves && c.halves < 2)) return null;
+  if (m.status !== "ft" && (!m.phase || m.phase === "h1")) return null;
+  const half = c.half || 0;
+  let a = 0, b = 0;
+  for (const e of events) {
+    if (e.type !== "goal" && e.type !== "own_goal") continue;
+    const inH1 = e.p ? e.p === "h1" : half > 0 && (e.minute ?? 0) <= half;
+    if (!inH1) continue;
+    const forA = (e.type === "goal" && e.teamId === m.teamA) || (e.type === "own_goal" && e.teamId === m.teamB);
+    if (forA) a++; else b++;
+  }
+  return [a, b];
+}
+
 function matchView(r) {
   const m = state.matchById[r.id];
   if (!m) return `<a class="back" href="#/">← Beranda</a><div class="sheet"><p class="empty">Pertandingan tidak ditemukan.</p></div>`;
@@ -691,6 +708,7 @@ function matchView(r) {
       <div class="tm">${badge(B, false, "lg")}<b>${esc(sideName(m, "B"))}</b></div></div>
     <div class="clockbig" ${m.status === "live" ? `data-clockbig="${esc(m.id)}"` : ""}>${m.status === "live" ? clockText(m) : ""}</div>
     ${addedText(m) ? `<div class="addednote">${esc(addedText(m))}</div>` : ""}
+    ${(() => { const ht = htScore(m, events); return ht ? `<div class="htnote">Babak 1: ${ht[0]} – ${ht[1]}</div>` : ""; })()}
     ${shootout(m).any && (m.scoreA ?? 0) === (m.scoreB ?? 0) ? `<div class="addednote">Adu penalti ${penScoreText(m)}</div>` : ""}
     <div class="scorers"><div>${scorersList(m, "A")}</div><div>${scorersList(m, "B")}</div></div></div>`;
 
@@ -714,7 +732,7 @@ function matchView(r) {
     body = `${penCard}<div class="sheet"><h3 style="font-family:var(--font-d);font-size:22px;padding:12px 16px 4px">Jalannya laga</h3>${rows.length ? rows.join("") : `<p class="empty">Pertandingan belum dimulai.</p>`}</div>`;
   } else if (tab === "lineup") {
     const ready = (m.lineupA?.starters || []).length && (m.lineupB?.starters || []).length;
-    body = `<div class="sheet"><div class="lu-head"><h2>Line up</h2><span class="muted small">Susunan awal, 5 pemain</span></div>
+    body = `<div class="sheet"><div class="lu-head"><h2>Line up</h2><span class="muted small">5 pemain inti dan cadangan (maksimal 10 pemain)</span></div>
       ${ready ? `<div class="lu">${lineupCol(m, "A", evA)}${lineupCol(m, "B", evB)}</div>` : `<p class="lu-wait">Line up belum diumumkan. Susunan muncul di sini setelah panitia mengisinya, sebelum laga dimulai.</p>`}</div>`;
   } else {
     const c = (list, f) => list.filter(f).length;

@@ -85,7 +85,8 @@ export async function syncServerTime() {
 // match.clock  : { running, baseSec (detik di babak ini), startedAt }
 // match.cfg    : durasi yang dibekukan saat laga dimulai (mengubah Pengaturan tidak mengacaukan laga yang sedang jalan)
 // match.pause  : { key, label, side? } bila jam dihentikan darurat (cedera, dll) atau laga dibuka untuk koreksi
-export const DEFAULT_TIMING = { groupHalves: 2, groupHalf: 10, koHalf: 15, etHalf: 5, breakMin: 5, etBreakMin: 1 };
+// finalHalf 0 = laga Final ikut durasi babak gugur (koHalf); isi 1-45 bila Final punya durasi sendiri.
+export const DEFAULT_TIMING = { groupHalves: 2, groupHalf: 10, koHalf: 15, finalHalf: 0, etHalf: 5, breakMin: 5, etBreakMin: 1 };
 
 /** Durasi dari Pengaturan, dengan nilai bawaan dan batas wajar bila isinya kosong atau aneh. */
 export function timingOf(settings) {
@@ -96,6 +97,7 @@ export function timingOf(settings) {
     groupHalves: Number(t.groupHalves) === 1 ? 1 : 2,
     groupHalf: n(t.groupHalf, D.groupHalf, 1, 45),
     koHalf: n(t.koHalf, D.koHalf, 1, 45),
+    finalHalf: n(t.finalHalf, 0, 1, 45),
     etHalf: n(t.etHalf, D.etHalf, 1, 15),
     breakMin: n(t.breakMin, D.breakMin, 0, 20),
     etBreakMin: n(t.etBreakMin, D.etBreakMin, 0, 10),
@@ -105,7 +107,7 @@ export const isKnockout = (m) => !!m && !!m.stage && m.stage !== "group";
 /** Konfigurasi durasi satu laga (dibekukan ke match.cfg saat laga dimulai). */
 export function cfgFor(m, timing = DEFAULT_TIMING) {
   const ko = isKnockout(m);
-  return { ko, halves: ko ? 2 : timing.groupHalves, half: ko ? timing.koHalf : timing.groupHalf, etHalf: timing.etHalf, breakMin: timing.breakMin, etBreakMin: timing.etBreakMin };
+  return { ko, halves: ko ? 2 : timing.groupHalves, half: ko ? (m.stage === "final" && timing.finalHalf ? timing.finalHalf : timing.koHalf) : timing.groupHalf, etHalf: timing.etHalf, breakMin: timing.breakMin, etBreakMin: timing.etBreakMin };
 }
 const cfgOf = (m) => m.cfg || cfgFor(m);
 
@@ -278,8 +280,10 @@ export const lineupIds = (match, side) => {
 
 // ---------- Skorsing (dihitung dari kejadian, tanpa data baru) ----------
 // Merah (langsung atau dari kuning kedua) = absen SUSPENSION.redMatches laga berikutnya tim itu.
-// Akumulasi kuning (di laga berbeda) mencapai yellowLimit = absen 1 laga, lalu hitungan mulai dari nol.
-// Dua kuning di laga yang sama sudah jadi merah, jadi tidak dihitung dua kali. Kuning dari babak grup dihapus saat babak gugur dimulai.
+// Dua kuning di laga yang SAMA = kartu merah (kuning kedua) -> skorsing otomatis, sama seperti merah.
+// Akumulasi kuning di laga BERBEDA mencapai yellowLimit = hanya PERINGATAN (soft): keputusan skorsing di tangan panitia.
+// Peringatan tidak memblokir line up. Panitia bisa "Terapkan skorsing" (jadi berlaku) atau "Abaikan" lewat suspOverrides.
+// Setelah mencapai batas, hitungan kuning mulai dari nol. Kuning dari babak grup dihapus saat babak gugur dimulai.
 // Panitia bisa mengubah lamanya lewat settings/main.suspOverrides[kunci] (0 = skorsing dibatalkan, 2 = diperpanjang).
 export const SUSPENSION = { yellowLimit: 2, redMatches: 1 };
 export const suspKey = (playerId, matchId) => `${playerId}_${matchId}`;
@@ -297,11 +301,11 @@ export function computeSuspensions(teamId, matches, events, players, overrides =
       .forEach((e) => (byP[e.playerId] ||= []).push(e));
     for (const [pid, list] of Object.entries(byP)) {
       let kind = null;
-      if (list.some((e) => e.type === "red")) kind = "red";
+      if (list.some((e) => e.type === "red") || list.filter((e) => e.type === "yellow").length >= 2) kind = "red";
       else { yel[pid] = (yel[pid] || 0) + list.length; if (yel[pid] >= SUSPENSION.yellowLimit) { kind = "yellow"; yel[pid] = 0; } }
       if (!kind) continue;
       const base = kind === "red" ? SUSPENSION.redMatches : 1, key = suspKey(pid, m.id), len = overrides[key] ?? base;
-      out.push({ playerId: pid, matchId: m.id, kind, base, len, key, overridden: overrides[key] != null, covers: L.slice(j + 1, j + 1 + len).map((x) => x.id) });
+      out.push({ playerId: pid, matchId: m.id, kind, base, len, key, overridden: overrides[key] != null, soft: kind === "yellow" && overrides[key] == null, covers: L.slice(j + 1, j + 1 + len).map((x) => x.id) });
     }
   });
   return out;
@@ -310,7 +314,14 @@ export function computeSuspensions(teamId, matches, events, players, overrides =
 export function suspendedIn(match, teamId, matches, events, players, overrides = {}) {
   const map = new Map();
   if (!teamId || match.status === "ft") return map;
-  for (const o of computeSuspensions(teamId, matches, events, players, overrides)) if (o.covers.includes(match.id) && !map.has(o.playerId)) map.set(o.playerId, o);
+  for (const o of computeSuspensions(teamId, matches, events, players, overrides)) if (!o.soft && o.covers.includes(match.id) && !map.has(o.playerId)) map.set(o.playerId, o);
+  return map;
+}
+/** Peringatan akumulasi kuning untuk satu laga (belum diputuskan panitia, tidak memblokir): Map playerId -> rincian. */
+export function warnedIn(match, teamId, matches, events, players, overrides = {}) {
+  const map = new Map();
+  if (!teamId || match.status === "ft") return map;
+  for (const o of computeSuspensions(teamId, matches, events, players, overrides)) if (o.soft && o.covers.includes(match.id) && !map.has(o.playerId)) map.set(o.playerId, o);
   return map;
 }
 export const suspReason = (o) => (o.kind === "red" ? "Kartu merah" : `Akumulasi ${SUSPENSION.yellowLimit} kartu kuning`) + (o.len !== o.base ? ` (skorsing ${o.len} laga)` : "");
@@ -678,6 +689,67 @@ export function unresolvedTies(teams, matches, events = []) {
       const rows = st[g].filter((r) => r.tieId === id);
       if (st[g].some((r, i) => r.tieId === id && i < QUALIFY_PER_GROUP)) out.push({ group: g, rows });
     }
+  }
+  return out;
+}
+
+/**
+ * Tim yang berhak tampil di fase gugur.
+ * QF: peringkat 1-2 dari grup yang SUDAH selesai (tim yang masih seri penuh di batas lolos ikut dihitung sampai urutannya ditentukan).
+ * SF: pemenang QF. Final: pemenang SF.
+ * Hasil: { ids: Set tim yang berhak, why: { teamId: alasan tidak berhak } }.
+ */
+export function knockoutEligible(stage, teams, matches, events = []) {
+  const ids = new Set(), why = {};
+  if (stage === "qf") {
+    const st = computeStandings(teams, matches, events);
+    for (const g of Object.keys(st)) {
+      const rows = st[g];
+      if (!groupDone(matches, g, teams)) { rows.forEach((r) => { why[r.teamId] = `Grup ${g} belum selesai`; }); continue; }
+      rows.forEach((r, i) => {
+        const inTop = i < QUALIFY_PER_GROUP || (r.tied && rows.some((x, j) => x.tieId === r.tieId && j < QUALIFY_PER_GROUP));
+        if (inTop) ids.add(r.teamId); else why[r.teamId] = `finis peringkat ${i + 1} di grup ${g}`;
+      });
+    }
+  } else if (stage === "sf" || stage === "final") {
+    const prev = stage === "sf" ? "qf" : "sf", name = stage === "sf" ? "Perempat Final" : "Semi Final";
+    for (const m of matches.filter((x) => x.stage === prev)) {
+      const w = winnerSide(m), wt = teamOfSide(m, w);
+      if (wt) ids.add(wt);
+      for (const s of ["A", "B"]) {
+        const t = teamOfSide(m, s);
+        if (t && t !== wt) why[t] = w ? `kalah di ${name}` : `${name} belum selesai`;
+      }
+    }
+    teams.forEach((t) => { if (!ids.has(t.id) && !why[t.id]) why[t.id] = `tidak melalui ${name}`; });
+  }
+  teams.forEach((t) => { if (!ids.has(t.id) && !why[t.id]) why[t.id] = "belum lolos ke fase ini"; });
+  return { ids, why };
+}
+
+/** Pesan untuk tim yang tidak berhak di fase gugur (kosong = semua berhak atau bukan fase gugur). */
+export function knockoutTeamProblems(stage, teamIds, teams, matches, events = []) {
+  if (stage !== "qf" && stage !== "sf" && stage !== "final") return [];
+  const { ids, why } = knockoutEligible(stage, teams, matches, events);
+  const nm = (id) => teams.find((t) => t.id === id)?.name || id;
+  return teamIds.filter((id) => id && !ids.has(id)).map((id) => `${nm(id)}: ${why[id] || "belum lolos"}`);
+}
+
+/**
+ * Pengisian otomatis: HANYA slot tim yang masih kosong pada laga yang belum mulai.
+ * Tidak menimpa tim yang sudah terisi, jadi line up yang sudah disiapkan admin aman.
+ * Perubahan pada slot yang sudah terisi (mis. hasil dikoreksi) tetap lewat planKnockout + tombol manual.
+ */
+export function autoFillPlan(teams, matches, events = []) {
+  const b = computeBracket(teams, matches, events);
+  const out = [];
+  for (const s of [...b.qf, ...b.sf, b.final]) {
+    const m = s.match;
+    if (!m || m.status !== "scheduled") continue;
+    const patch = {};
+    if (s.teamA && !m.teamA && s.teamA !== m.teamB) patch.teamA = s.teamA;
+    if (s.teamB && !m.teamB && s.teamB !== (patch.teamA || m.teamA)) patch.teamB = s.teamB;
+    if (Object.keys(patch).length) out.push({ id: m.id, name: s.name, patch });
   }
   return out;
 }
