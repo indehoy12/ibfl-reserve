@@ -125,7 +125,7 @@ function standingsTable(rows, qualify, done = false) {
       (r, i) => `<tr class="${i < qualify && r.p > 0 ? "q" : done && i >= qualify ? "out" : ""}">
       <td class="rank">${i + 1}</td><td class="tm">${logoOf(state.teamById[r.teamId]) ? `<span class="tmrow">${badge(state.teamById[r.teamId], true)}${esc(r.name)}${tieMark(r)}</span>` : esc(r.name) + tieMark(r)}</td><td>${r.p}</td>
       <td class="opt">${r.w}</td><td class="opt">${r.d}</td><td class="opt">${r.l}</td>
-      <td>${r.gf}</td><td class="opt">${r.ga}</td><td>${r.gf - r.ga > 0 ? "+" : ""}${r.gf - r.ga}</td><td class="pts">${r.pts}</td></tr>`
+      <td>${r.gf}</td><td class="opt">${r.ga}</td><td class="sg ${r.gf - r.ga > 0 ? "pos" : r.gf - r.ga < 0 ? "neg" : ""}">${r.gf - r.ga > 0 ? "+" : ""}${r.gf - r.ga}</td><td class="pts">${r.pts}</td></tr>`
     )
     .join("")}</tbody></table>`;
 }

@@ -47,7 +47,10 @@ a {
   color: inherit;
   text-decoration: none;
 }
-h1,h2,h3,p{
+h1,
+h2,
+h3,
+p {
   margin: 0;
 }
 button {
@@ -165,7 +168,8 @@ img {
   display: flex;
   flex-direction: column;
 }
-.sitenav a,.subbtn{
+.sitenav a,
+.subbtn {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -179,7 +183,8 @@ img {
   font-weight: 600;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-.sitenav a.on,.has-sub.on > .subbtn{
+.sitenav a.on,
+.has-sub.on > .subbtn {
   color: #f2bd6b;
 }
 .caret {
@@ -219,10 +224,12 @@ body.menu-open {
 }
 
 @media (min-width: 900px) {
-  .burger,.scrim{
+  .burger,
+  .scrim {
     display: none !important;
   }
-  .sitebar .sitenav,.sitebar.open .sitenav{
+  .sitebar .sitenav,
+  .sitebar.open .sitenav {
     display: flex;
     flex-direction: row;
     align-items: stretch;
@@ -234,7 +241,8 @@ body.menu-open {
     max-height: none;
     overflow: visible;
   }
-  .sitenav a,.subbtn{
+  .sitenav a,
+  .subbtn {
     width: auto;
     height: 60px;
     min-height: 0;
@@ -243,10 +251,13 @@ body.menu-open {
     font-size: 17px;
     position: relative;
   }
-  .sitenav a:hover,.subbtn:hover,.has-sub.open > .subbtn{
+  .sitenav a:hover,
+  .subbtn:hover,
+  .has-sub.open > .subbtn {
     background: rgba(255, 255, 255, 0.08);
   }
-  .sitenav > a.on::after,.has-sub.on > .subbtn::after{
+  .sitenav > a.on::after,
+  .has-sub.on > .subbtn::after {
     content: "";
     position: absolute;
     left: 18px;
@@ -255,7 +266,8 @@ body.menu-open {
     height: 3px;
     background: var(--orange);
   }
-  .sitenav a.on,.has-sub.on > .subbtn{
+  .sitenav a.on,
+  .has-sub.on > .subbtn {
     color: #fff;
   }
   .has-sub {
@@ -299,7 +311,8 @@ main {
 main:focus {
   outline: none;
 }
-.loading,.empty{
+.loading,
+.empty {
   text-align: center;
   color: var(--ink-2);
   padding: 28px 12px;
@@ -900,7 +913,8 @@ table.std th {
   text-align: center;
   padding: 10px 4px 8px;
 }
-table.std th.tm,table.std td.tm{
+table.std th.tm,
+table.std td.tm {
   text-align: left;
 }
 table.std td {
@@ -1029,7 +1043,8 @@ table.std .opt {
   border-top: 1px solid var(--rule);
   text-align: center;
 }
-.tbl-sm td:first-child,.tbl-sm th:first-child{
+.tbl-sm td:first-child,
+.tbl-sm th:first-child {
   text-align: left;
   padding-left: 16px;
 }
@@ -1278,7 +1293,8 @@ a.bm:hover {
   .r-fn .rc {
     justify-content: center;
   }
-  .r-qf .bm::after,.r-sf .bm::after{
+  .r-qf .bm::after,
+  .r-sf .bm::after {
     content: "";
     position: absolute;
     top: 50%;
@@ -1286,7 +1302,8 @@ a.bm:hover {
     width: 20px;
     border-top: 2px solid #b7c0d2;
   }
-  .r-sf .bm::before,.r-fn .bm.final::before{
+  .r-sf .bm::before,
+  .r-fn .bm.final::before {
     content: "";
     position: absolute;
     top: 50%;
@@ -1446,7 +1463,8 @@ a.bm:hover {
   background: var(--ink-3);
   margin: 0 5px;
 }
-.ico.yc,.ico.rc{
+.ico.yc,
+.ico.rc {
   width: 12px;
   height: 17px;
   border-radius: 2px;
@@ -1685,13 +1703,19 @@ main[data-view="laga"] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  *,*::before,*::after{
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }
 }
 @media print {
-  .sitebar,.scrim,.skip,.chips,.board-tabs{
+  .sitebar,
+  .scrim,
+  .skip,
+  .chips,
+  .board-tabs {
     display: none;
   }
   body {
@@ -1834,7 +1858,8 @@ body.lb-open {
   color: #075c38;
   border-radius: 3px;
 }
-.gk-prog.out,.gk-out{
+.gk-prog.out,
+.gk-out {
   background: #fde6e6;
   color: #a31622;
 }
@@ -1887,13 +1912,15 @@ body.lb-open {
     0 2px 4px rgba(13, 32, 56, 0.06), 0 16px 34px -10px rgba(13, 32, 56, 0.25);
   --ease: cubic-bezier(0.22, 0.7, 0.2, 1);
 }
-.sheet,.sponsors{
+.sheet,
+.sponsors {
   border: 1px solid rgba(13, 32, 56, 0.06);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-1);
   overflow: hidden;
 }
-details.team,.bm{
+details.team,
+.bm {
   border: 1px solid rgba(13, 32, 56, 0.06);
   border-radius: 18px;
   box-shadow: var(--shadow-1);
@@ -1903,7 +1930,8 @@ details.team,.bm{
     border-color 0.2s;
 }
 @media (hover: hover) {
-  details.team:hover,a.bm:hover{
+  details.team:hover,
+  a.bm:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-2);
     border-color: rgba(237, 190, 109, 0.5);
@@ -1917,7 +1945,8 @@ details.team,.bm{
     var(--shadow-1);
   overflow: hidden;
 }
-.announce,.motm{
+.announce,
+.motm {
   border-left: 0;
   border-radius: var(--r);
   box-shadow:
@@ -1941,7 +1970,8 @@ details.team,.bm{
   transform: scale(0.95);
 }
 /* Tombol: naik sedikit saat disorot, menekan saat diketuk, kilau lewat saat hover */
-.btn,.board-link{
+.btn,
+.board-link {
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -1952,7 +1982,8 @@ details.team,.bm{
     background-color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
-.btn::before,.board-link::before{
+.btn::before,
+.board-link::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1967,35 +1998,42 @@ details.team,.bm{
   transition: transform 0.7s var(--ease);
 }
 
-.board-link{
+.board-link {
   box-shadow: 0 8px 18px -8px rgba(237, 190, 109, 0.85);
 }
 @media (hover: hover) {
-  .btn:hover,.board-link:hover{
+  .btn:hover,
+  .board-link:hover {
     transform: translateY(-2px);
     box-shadow: 0 14px 24px -10px rgba(11, 42, 91, 0.6);
   }
-  .btn:hover::before,.board-link:hover::before{
+  .btn:hover::before,
+  .board-link:hover::before {
     transform: translateX(130%);
   }
 }
-.btn:active,.board-link:active{
+.btn:active,
+.board-link:active {
   transform: translateY(0) scale(0.96);
   transition-duration: 0.09s;
 }
-.sitenav a,.subbtn{
+.sitenav a,
+.subbtn {
   border-radius: 12px;
   transition:
     background 0.2s,
     color 0.2s;
 }
 @media (min-width: 900px) {
-  .sitenav a:hover,.subbtn:hover{
+  .sitenav a:hover,
+  .subbtn:hover {
     background: rgba(255, 255, 255, 0.08);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  *,*::before,*::after{
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }
@@ -2111,7 +2149,8 @@ details.team,.bm{
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
-.sk-grid,.sk-two{
+.sk-grid,
+.sk-two {
   display: grid;
   gap: 22px;
 }
@@ -2380,7 +2419,8 @@ body {
 .submenu {
   background: #0f3a63 !important;
 }
-.sitenav a.on,.has-sub.on > .subbtn{
+.sitenav a.on,
+.has-sub.on > .subbtn {
   color: #ffd58a;
 }
 .scrim {
@@ -2388,10 +2428,19 @@ body {
 }
 
 /* Kartu putih dengan bayangan biru lembut */
-.sheet,.sponsors,details.team,.bm,.livecard{
+.sheet,
+.sponsors,
+details.team,
+.bm,
+.livecard {
   border-color: rgba(25, 105, 180, 0.1);
 }
-.sheet,details.team,.bm,.livecard,.sk-panel,.sk-card{
+.sheet,
+details.team,
+.bm,
+.livecard,
+.sk-panel,
+.sk-card {
   background: #fff;
 }
 .livecard {
@@ -2411,14 +2460,16 @@ body {
 .head h2 {
   color: var(--ink);
 }
-.head a,.back{
+.head a,
+.back {
   color: var(--blue);
 }
 .error-box {
   background: #fff1f1;
   color: #7a1018;
 }
-.announce,.motm{
+.announce,
+.motm {
   background: #fdf6e4;
   color: var(--ink);
 }
@@ -2456,7 +2507,7 @@ table.std tr.out td.rank::before {
   background: linear-gradient(135deg, var(--blue), #12508c);
 }
 
-.board-link{
+.board-link {
   background: linear-gradient(135deg, #f6d595, var(--orange) 55%, #dbb066);
 }
 .board-link.ghost {
@@ -2464,7 +2515,8 @@ table.std tr.out td.rank::before {
 }
 
 /* Papan skor & hero: hitam kebiruan, cahaya biru kiri bawah dan oranye-merah kanan bawah (seperti flyer dan admin), tekstur jaring gawang halus */
-.board,.scorebox{
+.board,
+.scorebox {
   background:
     url(../assets/bg-arena.jpg) center 30% / cover,
     radial-gradient(
@@ -2558,10 +2610,12 @@ table.std tr.out td.rank::before {
 .board-idle .acts {
   justify-content: center;
 }
-.board-meta,.scorebox .meta{
+.board-meta,
+.scorebox .meta {
   color: #e6f0ff;
 }
-.board-num.vs,.scorebox .bigscore.vs{
+.board-num.vs,
+.scorebox .bigscore.vs {
   color: #cfe6ff;
 }
 
@@ -2576,7 +2630,8 @@ table.std tr.out td.rank::before {
 }
 
 /* Foto di hero beranda dan hero detail laga (foto dari flyer): gelap di atas supaya teks tetap terbaca di semua ukuran layar */
-.board,.scorebox{
+.board,
+.scorebox {
   background-color: #030b15;
   background-repeat: no-repeat;
   background-blend-mode: normal;
@@ -2645,7 +2700,8 @@ table.std tr.out td.rank::before {
       center 30%;
   }
 }
-.board-in,.scorebox > *{
+.board-in,
+.scorebox > * {
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
 }
 
@@ -2679,12 +2735,16 @@ table.std tr.out td.rank::before {
   inset: 0;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 1s ease, visibility 0s linear 1s;
+  transition:
+    opacity 1s ease,
+    visibility 0s linear 1s;
 }
 .gallery .slide.on {
   opacity: 1;
   visibility: visible;
-  transition: opacity 1s ease, visibility 0s;
+  transition:
+    opacity 1s ease,
+    visibility 0s;
   z-index: 1;
 }
 .gallery .slide img {
@@ -2709,7 +2769,12 @@ table.std tr.out td.rank::before {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: linear-gradient(to top, rgba(7, 24, 43, 0.78) 0%, rgba(7, 24, 43, 0.3) 22%, transparent 42%);
+  background: linear-gradient(
+    to top,
+    rgba(7, 24, 43, 0.78) 0%,
+    rgba(7, 24, 43, 0.3) 22%,
+    transparent 42%
+  );
 }
 .gallery figcaption {
   position: absolute;
@@ -2755,7 +2820,9 @@ table.std tr.out td.rank::before {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gallery .slide,.gallery .slide .fg,.gallery .slide.on .fg{
+  .gallery .slide,
+  .gallery .slide .fg,
+  .gallery .slide.on .fg {
     transform: none;
   }
 }
@@ -2814,7 +2881,8 @@ table.std tr.out td.rank::before {
 .tl2 .min {
   text-align: center;
 }
-.tl-l,.tl-r{
+.tl-l,
+.tl-r {
   min-width: 0;
 }
 .tl-l {
@@ -2926,7 +2994,8 @@ table.std tr.out td.rank::before {
   font-size: 13px;
   color: var(--ink-3);
 }
-.ptbl td,.ptbl th{
+.ptbl td,
+.ptbl th {
   white-space: nowrap;
 }
 .ptbl td.tm {
@@ -3239,18 +3308,22 @@ table.std tr.out td.rank::before {
   max-width: 100%;
   border-radius: 0;
 }
-.tbadge.wide > img,.tbadge.sm.wide > img{
+.tbadge.wide > img,
+.tbadge.sm.wide > img {
   transform: none;
 }
 /* Latar gelap (beranda, detail laga, TV, juara): logo tetap transparan tanpa kotak. Garis tepi putih tipis mengikuti bentuk logo supaya logo gelap/biru tetap terbaca */
-.board .tbadge > img,.scorebox .tbadge > img,.champ .tbadge > img{
+.board .tbadge > img,
+.scorebox .tbadge > img,
+.champ .tbadge > img {
   filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)
     drop-shadow(0 0 1px #fff);
 }
 
 /* ---------- Baris daftar: logo di samping nama ---------- */
 /* Semua logo (persegi maupun lurus) ditaruh di slot selebar sama, supaya nama tim selalu mulai dari posisi yang sama */
-.tmrow .tbadge:has(> img),.podrow .tbadge:has(> img){
+.tmrow .tbadge:has(> img),
+.podrow .tbadge:has(> img) {
   width: auto;
   aspect-ratio: 2.4;
   max-width: none;
@@ -3259,7 +3332,8 @@ table.std tr.out td.rank::before {
 .tmrow .tbadge.sm:has(> img) {
   height: 32px;
 }
-summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
+summary > .tbadge.tbadge:has(> img),
+.bt .tbadge:has(> img) {
   width: auto;
   aspect-ratio: 2;
   max-width: none;
@@ -3267,11 +3341,17 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
 }
 
 /* Gambar logo di slot daftar: dipasang tepat di dalam kotaknya (tidak ikut mengembang mengikuti ukuran file asli) */
-.tmrow .tbadge:has(> img),.podrow .tbadge:has(> img),summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
+.tmrow .tbadge:has(> img),
+.podrow .tbadge:has(> img),
+summary > .tbadge.tbadge:has(> img),
+.bt .tbadge:has(> img) {
   position: relative;
   display: block;
 }
-.tmrow .tbadge:has(> img) > img,.podrow .tbadge:has(> img) > img,summary > .tbadge.tbadge:has(> img) > img,.bt .tbadge:has(> img) > img{
+.tmrow .tbadge:has(> img) > img,
+.podrow .tbadge:has(> img) > img,
+summary > .tbadge.tbadge:has(> img) > img,
+.bt .tbadge:has(> img) > img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -3299,7 +3379,9 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   gap: 10px;
   min-width: 0;
 }
-.vt .n,.res .tn .n,.scoreline .t .n{
+.vt .n,
+.res .tn .n,
+.scoreline .t .n {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -3312,17 +3394,21 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
 .mrow .vt + .vt {
   margin-top: 6px;
 }
-.res .tn,.scoreline .t{
+.res .tn,
+.scoreline .t {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.res .tn.r,.scoreline .t.r{
+.res .tn.r,
+.scoreline .t.r {
   justify-content: flex-end;
   text-align: right;
 }
 /* Semua logo di baris laga memakai slot selebar sama, supaya nama tim sejajar */
-.vt .tbadge:has(> img),.res .tn .tbadge:has(> img),.scoreline .t .tbadge:has(> img){
+.vt .tbadge:has(> img),
+.res .tn .tbadge:has(> img),
+.scoreline .t .tbadge:has(> img) {
   width: auto;
   aspect-ratio: 2;
   max-width: none;
@@ -3330,7 +3416,9 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   position: relative;
   display: block;
 }
-.vt .tbadge:has(> img) > img,.res .tn .tbadge:has(> img) > img,.scoreline .t .tbadge:has(> img) > img{
+.vt .tbadge:has(> img) > img,
+.res .tn .tbadge:has(> img) > img,
+.scoreline .t .tbadge:has(> img) > img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -3338,11 +3426,14 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   box-sizing: border-box;
   object-fit: contain;
 }
-.res .tn .tbadge:has(> img),.scoreline .t .tbadge:has(> img){
+.res .tn .tbadge:has(> img),
+.scoreline .t .tbadge:has(> img) {
   aspect-ratio: 1.6;
 }
 /* Tim yang belum pasti (babak gugur): tanda tanya di slot yang sama */
-.vt .tbadge.ph,.res .tn .tbadge.ph,.scoreline .t .tbadge.ph{
+.vt .tbadge.ph,
+.res .tn .tbadge.ph,
+.scoreline .t .tbadge.ph {
   width: 48px;
   height: 24px;
   border: 0;
@@ -3351,25 +3442,31 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   color: var(--ink-3);
   font-size: 16px;
 }
-.res .tn .tbadge.ph,.scoreline .t .tbadge.ph{
+.res .tn .tbadge.ph,
+.scoreline .t .tbadge.ph {
   width: 38px;
 }
 
 /* Nama tim jangan terpotong di tengah kata; di layar sempit logo ditaruh di atas nama */
-.vt .n,.res .tn .n,.scoreline .t .n{
+.vt .n,
+.res .tn .n,
+.scoreline .t .n {
   overflow-wrap: break-word;
 }
 @media (max-width: 560px) {
-  .res .tn,.scoreline .t{
+  .res .tn,
+  .scoreline .t {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  .res .tn.r,.scoreline .t.r{
+  .res .tn.r,
+  .scoreline .t.r {
     flex-direction: column-reverse;
     align-items: flex-end;
   }
-  .res .tn .tbadge:has(> img),.scoreline .t .tbadge:has(> img){
+  .res .tn .tbadge:has(> img),
+  .scoreline .t .tbadge:has(> img) {
     height: 26px;
     aspect-ratio: 2;
   }
@@ -3385,11 +3482,13 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
 }
 /* Layar lebar (halaman diperbesar oleh js/fit.js): logo besar di papan skor beranda ikut membesar dan tetap utuh, baik logo persegi maupun lurus */
 @media (min-width: 1280px) {
-  .board .tbadge.lg,.scorebox .tbadge.lg{
+  .board .tbadge.lg,
+  .scorebox .tbadge.lg {
     width: 88px;
     height: 88px;
   }
-  .board .tbadge.lg.wide,.scorebox .tbadge.lg.wide{
+  .board .tbadge.lg.wide,
+  .scorebox .tbadge.lg.wide {
     width: auto;
     height: auto;
     max-width: 180px;
@@ -3415,9 +3514,13 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   -webkit-backdrop-filter: blur(6px);
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.25s ease, background 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
 }
-.gallery .gzoom:hover,.gallery .gzoom:focus-visible{
+.gallery .gzoom:hover,
+.gallery .gzoom:focus-visible {
   opacity: 1;
   background: rgba(7, 24, 43, 0.75);
   transform: scale(1.06);
@@ -3435,12 +3538,17 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: #fff;
-  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   animation: glbIn 0.25s ease both;
 }
 @keyframes glbIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .glb-top {
   flex: none;
@@ -3467,7 +3575,8 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   color: rgba(255, 255, 255, 0.7);
   font-variant-numeric: tabular-nums;
 }
-.glb-x,.glb-nav{
+.glb-x,
+.glb-nav {
   display: grid;
   place-items: center;
   padding: 0;
@@ -3476,19 +3585,24 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   color: #fff;
   background: rgba(255, 255, 255, 0.14);
   cursor: pointer;
-  transition: background 0.25s ease, transform 0.25s ease, color 0.25s ease;
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease,
+    color 0.25s ease;
 }
 .glb-x {
   flex: none;
   width: 44px;
   height: 44px;
 }
-.glb-x:hover,.glb-x:focus-visible{
+.glb-x:hover,
+.glb-x:focus-visible {
   background: var(--gold);
   color: #07182b;
   transform: rotate(90deg);
 }
-.glb-nav:hover,.glb-nav:focus-visible{
+.glb-nav:hover,
+.glb-nav:focus-visible {
   background: rgba(255, 255, 255, 0.28);
   transform: translateY(-50%) scale(1.06);
 }
@@ -3547,7 +3661,10 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   background: #0a2038;
   opacity: 0.55;
   cursor: pointer;
-  transition: opacity 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
 }
 .glb-thumbs button:hover {
   opacity: 0.9;
@@ -3600,7 +3717,12 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .glb,.glb-img,.glb-x,.glb-nav,.glb-thumbs button,.gallery .gzoom{
+  .glb,
+  .glb-img,
+  .glb-x,
+  .glb-nav,
+  .glb-thumbs button,
+  .gallery .gzoom {
     animation: none;
     transition: none;
   }
@@ -3612,4 +3734,153 @@ summary > .tbadge.tbadge:has(> img),.bt .tbadge:has(> img){
   font-size: 14px;
   font-weight: 700;
   color: #cfd8ea;
+}
+
+/* ---------- Klasemen: versi rapi ----------
+   - Slot logo ukuran tetap (persegi maupun lebar), nama tim selalu mulai di posisi sama
+   - Kolom angka lebar tetap, tinggi baris seragam di semua grup
+   - Kartu grup sejajar (tidak ada margin dari .sheet + .sheet) */
+.groups-grid {
+  align-items: start;
+}
+.groups-grid > .sheet {
+  margin-top: 0;
+}
+@media (min-width: 760px) and (max-width: 999px) {
+  .groups-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (min-width: 1000px) {
+  .groups-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.gtitle {
+  padding: 16px 18px 12px;
+  line-height: 1;
+}
+table.std {
+  table-layout: fixed;
+}
+table.std thead th {
+  background: var(--surface);
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  padding: 9px 2px;
+  white-space: nowrap;
+}
+table.std thead th.tm {
+  padding-left: 0;
+}
+table.std th:first-child,
+table.std td.rank {
+  width: 40px;
+}
+table.std th:nth-child(n + 3),
+table.std td:nth-child(n + 3) {
+  width: 40px;
+}
+table.std th:last-child,
+table.std td.pts {
+  width: 56px;
+}
+table.std td {
+  height: 62px;
+  padding: 6px 2px;
+  vertical-align: middle;
+}
+table.std td.rank {
+  padding-left: 14px;
+  font-weight: 600;
+}
+table.std td.tm {
+  padding-right: 8px;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+@media (max-width: 479px) {
+  table.std td.tm {
+    font-size: 14px;
+  }
+}
+table.std td.pts {
+  padding-right: 6px;
+}
+table.std td.sg.pos {
+  color: var(--win);
+  font-weight: 600;
+}
+table.std td.sg.neg {
+  color: var(--live);
+  font-weight: 600;
+}
+/* Baris nama: logo di slot tetap, nama boleh turun 2 baris tanpa menabrak logo */
+table.std .tmrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+table.std .tmrow .tbadge,
+table.std .tmrow .tbadge.sm,
+table.std .tmrow .tbadge.wide,
+table.std .tmrow .tbadge:has(> img) {
+  flex: 0 0 56px;
+  width: 56px;
+  max-width: 56px;
+  height: 40px;
+  aspect-ratio: auto;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+table.std .tmrow .tbadge:has(> img) > img {
+  position: static;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: none;
+}
+/* Tim tanpa logo: lingkaran singkatan tetap di tengah slot */
+table.std .tmrow .tbadge:not(:has(> img)) {
+  background: transparent !important;
+}
+table.std .tmrow .tbadge:not(:has(> img)) {
+  font-size: 13px;
+}
+@media (max-width: 479px) {
+  table.std td {
+    height: 58px;
+  }
+  table.std th:first-child,
+  table.std td.rank {
+    width: 34px;
+  }
+  table.std td.rank {
+    padding-left: 12px;
+  }
+  table.std th:nth-child(n + 3),
+  table.std td:nth-child(n + 3) {
+    width: 40px;
+  }
+  table.std th:last-child,
+  table.std td.pts {
+    width: 50px;
+  }
+  table.std .tmrow {
+    gap: 8px;
+  }
+  table.std .tmrow .tbadge,
+  table.std .tmrow .tbadge.sm,
+  table.std .tmrow .tbadge.wide,
+  table.std .tmrow .tbadge:has(> img) {
+    flex-basis: 40px;
+    width: 40px;
+    max-width: 40px;
+    height: 32px;
+  }
 }
