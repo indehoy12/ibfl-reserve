@@ -6,7 +6,7 @@ import {
   livePill, ftText, addedText, eventMinute, eventCmp,
   QUALIFY_PER_GROUP, suspendedIn, suspReason, eventSide, syncServerTime, lineupIds, ballSvg, teamProgress,
   skeleton, shootout, penScoreText, penDots, tickRtClocks,
-  groupDone as groupDoneU, standingStatus, timingOf, allStatus, standingsTableHtml, standingLegendHtml, qualSummaryHtml,
+  groupDone as groupDoneU, standingStatus, standingsTableHtml, standingLegendHtml,
 } from "./util.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { logoOf } from "./logos.js";
@@ -71,6 +71,8 @@ function statusPill(m) {
   return `<span class="pill soon">${m.kickoff ? timeStr(m.kickoff) : "Segera"}</span>`;
 }
 const scoreText = (m) => `${m.scoreA ?? 0} – ${m.scoreB ?? 0}`;
+// Skor besar: tanda "–" diberi jarak sendiri supaya tidak menempel ke angka.
+const bigScore = (m) => `${m.scoreA ?? 0}<span class="sdash">–</span>${m.scoreB ?? 0}`;
 const penNote = (m) => {
   if (!(m.status === "ft" && m.stage && m.stage !== "group" && (m.scoreA ?? 0) === (m.scoreB ?? 0) && m.penWinner)) return "";
   const sc = penScoreText(m); // urutan Tim A–Tim B, searah dengan skor di baris yang sama
@@ -322,7 +324,7 @@ function boardView(items) {
     <p class="board-meta">${meta}</p>
     <div class="board-score">
       <div class="board-team">${badge(A, false, "lg")}${esc(sideName(m, "A"))}</div>
-      <div class="board-num ${kind === "next" ? "vs" : ""}">${kind === "next" ? "vs" : scoreText(m)}</div>
+      <div class="board-num ${kind === "next" ? "vs" : ""}">${kind === "next" ? "vs" : bigScore(m)}</div>
       <div class="board-team">${badge(B, false, "lg")}${esc(sideName(m, "B"))}</div>
     </div>
     <div class="board-foot">${kind === "live" ? statusPill(m) : `<span class="board-meta">${when}</span>`}<a class="board-link" href="#/laga/${esc(m.id)}">Detail pertandingan</a></div>
@@ -479,7 +481,7 @@ function baganView() {
     <section class="round r-sf" aria-label="Semifinal"><h3>Semifinal</h3><div class="rc">${b.sf.map((s) => bracketCard(s)).join("")}</div></section>
     <section class="round r-fn" aria-label="Final"><h3>Final</h3><div class="rc">${bracketCard(b.final, "final")}</div></section>
   </div>
-  <p class="note">Pasangan terisi otomatis setelah semua laga grup selesai. Kalau seri di babak gugur, ${timingOf(state.settings).etHalf ? "lanjut perpanjangan waktu atau adu penalti sesuai keputusan panitia." : "langsung adu penalti."}</p>${footer}`;
+  ${footer}`;
 }
 
 // ---------- Statistik ----------
@@ -771,7 +773,7 @@ function matchView(r) {
   const head = `<div class="scorebox">
     <div class="meta"><span>${matchLabel(m)}, ${m.kickoff ? dayShort(m.kickoff) + (m.status === "scheduled" ? " " + timeStr(m.kickoff) : "") : "waktu akan ditentukan"}</span>${statusPill(m)}</div>
     <div class="teams"><div class="tm">${badge(A, false, "lg")}<b>${esc(sideName(m, "A"))}</b></div>
-      <div class="bigscore ${m.status === "scheduled" ? "vs" : ""}">${m.status === "scheduled" ? "vs" : scoreText(m)}</div>
+      <div class="bigscore ${m.status === "scheduled" ? "vs" : ""}">${m.status === "scheduled" ? "vs" : bigScore(m)}</div>
       <div class="tm">${badge(B, false, "lg")}<b>${esc(sideName(m, "B"))}</b></div></div>
     <div class="clockbig" ${m.status === "live" ? `data-clockbig="${esc(m.id)}"` : ""}>${m.status === "live" ? clockText(m) : ""}</div>
     ${addedText(m) ? `<div class="addednote">${esc(addedText(m))}</div>` : ""}

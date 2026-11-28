@@ -9,8 +9,8 @@ Hosting: **Netlify** (situs statis, tanpa build). Database & login admin: **Fire
 
 ## Klasemen gaya liga (website publik dan admin)
 
-Tabel klasemen memakai garis warna di sisi kiri baris: **biru** = lolos ke perempat final (2 teratas tiap grup), **merah** = tidak lolos, **emas** = seri penuh di batas lolos (menunggu adu penalti). Di bawah nama tim ada label **Lolos / Gugur / Adu penalti** dan ikon hasil laga grup terakhir (hijau centang menang, abu-abu strip seri, merah silang kalah; yang terbaru diberi lingkaran). Di layar lebar ikon pindah ke kolom **Form** di kanan.
-Label Lolos atau Gugur muncul setelah semua laga grup selesai, atau lebih awal bila posisinya sudah pasti dari hitungan poin (`standingStatus` di `js/util.js`; hitungannya hati-hati, tidak menganggap pasti bila masih bisa terbalik oleh penentu urutan). Halaman Klasemen publik punya ringkasan **Siapa yang lolos** dan kotak keterangan + aturan urutan. Admin punya halaman sendiri: **Pertandingan → Klasemen & lolos** (kolom Status juga ikut di lembar Klasemen pada ekspor Excel). Jumlah tim yang lolos per grup diatur lewat `QUALIFY_PER_GROUP` di `js/util.js`.
+Tabel klasemen memakai garis warna di sisi kiri baris: **biru** = lolos ke perempat final (2 teratas tiap grup), **merah** = tidak lolos, **emas** = seri penuh di batas lolos (menunggu adu penalti). Di bawah nama tim ada ikon hasil laga grup terakhir (hijau centang menang, abu-abu strip seri, merah silang kalah; yang terbaru diberi lingkaran). Di layar lebar ikon pindah ke kolom **Form** di kanan.
+Status lolos atau gugur (dipakai untuk garis warna dan di admin) ditentukan setelah semua laga grup selesai, atau lebih awal bila posisinya sudah pasti dari hitungan poin (`standingStatus` di `js/util.js`; hitungannya hati-hati, tidak menganggap pasti bila masih bisa terbalik oleh penentu urutan). Halaman Klasemen publik hanya menampilkan tabel dan kotak keterangan + aturan urutan (label Lolos/Gugur dan ringkasan "Siapa yang lolos" tidak ditampilkan di publik). Admin tetap punya label status dan ringkasan di halaman sendiri: **Pertandingan → Klasemen & lolos** (kolom Status juga ikut di lembar Klasemen pada ekspor Excel). Jumlah tim yang lolos per grup diatur lewat `QUALIFY_PER_GROUP` di `js/util.js`.
 
 ## Mengganti nama turnamen dan info umum
 
@@ -107,13 +107,13 @@ Admin → Pertandingan → Semua pertandingan → **Kelola** laga. Urutannya sen
 
 ## Fase laga dan jam
 
-| Fase                      | Tombol utama                                                                                        |
-| ------------------------- | --------------------------------------------------------------------------------------------------- |
-| Babak 1                   | Akhiri babak 1                                                                                      |
-| Istirahat (hitung mundur) | Mulai babak 2                                                                                       |
-| Babak 2                   | Selesai (FT). Di babak gugur yang seri: **Lanjut perpanjangan waktu** atau **Langsung adu penalti** |
-| ET1, istirahat ET, ET2    | Akhiri ET1, Mulai ET2, lalu Selesai (FT) (atau Lanjut adu penalti bila masih seri)                  |
-| Adu penalti               | Catat tiap tendangan (Gol / Gagal), pemenang terisi otomatis, lalu Selesai (FT)                     |
+| Fase                      | Tombol utama                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Babak 1                   | Akhiri babak 1                                                                                                                                                      |
+| Istirahat (hitung mundur) | Mulai babak 2                                                                                                                                                       |
+| Babak 2                   | Selesai (FT). Di babak gugur yang seri: **Lanjut perpanjangan waktu** atau **Langsung adu penalti** (bila perpanjangan waktu diisi 0: hanya **Lanjut adu penalti**) |
+| ET1, istirahat ET, ET2    | Akhiri ET1, Mulai ET2, lalu Selesai (FT) (atau Lanjut adu penalti bila masih seri)                                                                                  |
+| Adu penalti               | Catat tiap tendangan (Gol / Gagal), pemenang terisi otomatis, lalu Selesai (FT)                                                                                     |
 
 - **Jam per babak mulai dari 0.** Skor, gol, dan kartu berlanjut. Menit kejadian babak 1 dan 2 berurutan: dengan 2 × 10 menit, babak 2 dihitung 11', 12', ... (babak gugur 2 × 15: 16', 17', ...). **Perpanjangan waktu dihitung per babak**: tampil `ET1 3'`, `ET2 2'`, dan tambahan waktu `ET1 5+1'`.
 - **Tambahan waktu**: jam tidak berhenti paksa di akhir babak. Setelah batas tampil `10+1'`, `10+2'`, dan admin menekan Akhiri saat wasit meniup peluit. Admin juga bisa mengatur pengingat "Tambahan waktu +2'" di layar penonton (tombol − / +).
@@ -123,7 +123,7 @@ Admin → Pertandingan → Semua pertandingan → **Kelola** laga. Urutannya sen
 - **Pergantian pemain**: tidak dicatat (pemain cadangan bisa mencetak gol dan assist, jadi lengkapnya cukup di Ringkasan laga). Pemain di lapangan = susunan inti dikurangi yang kena kartu merah.
 - **Kiper**: tombol **Ganti kiper** hanya aktif bila tim punya kiper lain (pemain bertanda GK) di line up dan belum kena kartu merah. Tim dengan 1 kiper tidak bisa ganti kiper. Tombol **Power play** = main tanpa kiper (kiper terbang) dan **Akhiri power play** mengembalikan kiper. Setiap gol menyimpan `gkId` kiper yang kebobolan, jadi kebobolan dan clean sheet per kiper akurat; saat power play gol tidak dibebankan ke kiper mana pun. Ganti kiper dan power play tercatat di Ringkasan laga.
 - **Skorsing** (dihitung otomatis dari kartu, di `computeSuspensions` pada `util.js`): kartu merah = absen 1 laga berikutnya tim itu; 2 kartu kuning di laga berbeda = absen 1 laga lalu hitungan mulai dari nol; kuning babak grup dihapus saat babak gugur dimulai (ubah di `SUSPENSION`). Pemain terskors tampil "Skorsing" dan tidak bisa dipilih di line up; laga tidak bisa dimulai bila line up berisi pemain terskors. Panitia bisa **Batalkan skorsing**, **+1 laga**, atau **Kembalikan otomatis** di panel Skorsing pada editor line up (disimpan di `settings/main.suspOverrides`). Dashboard admin dan halaman laga publik menampilkan daftar skorsing.
-- **Ikon bola**: file `public/assets/ball.png` (hitam, latar transparan). Dipakai di seluruh website dan admin; ganti gambarnya dengan menimpa file itu. Dasar putih dan warna garis (merah untuk gol bunuh diri) diatur lewat CSS (`.ball`, variabel `--b`).
+- **Ikon bola**: berupa SVG vektor (`ballSvg` di `js/util.js`), warnanya diatur lewat CSS (`.ball`, variabel `--b`; merah untuk gol bunuh diri).
 - **Profil tim dan pemain** (`#/tim/ID`, `#/pemain/ID` di website; `#team/ID`, `#player/ID` di admin): main, M-S-K, gol, kebobolan, assist, kartu, daftar pemain dengan statistiknya, dan riwayat laga. Data dihitung dari kejadian yang sudah ada (`js/profile.js`), tanpa data baru.
 - **Statistik tim (admin)**: Tim & Pemain → Statistik tim. Tabel semua tim (gol, kebobolan, assist, kuning, merah) yang bisa diurutkan, ikut ke file Excel sebagai lembar _Statistik tim_ dan _Statistik pemain_.
 - **Riwayat pertemuan**: di halaman laga (tab Ringkasan, website dan admin): pertemuan lain kedua tim yang sudah selesai, plus total menang/seri/kalah.

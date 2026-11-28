@@ -605,9 +605,14 @@ span.chip {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: 14px 24px;
   flex-wrap: wrap;
   margin-top: 12px;
+}
+.board-num .sdash,
+.scorebox .bigscore .sdash {
+  display: inline-block;
+  margin: 0 0.2em;
 }
 .board-link {
   display: inline-flex;
@@ -3214,20 +3219,6 @@ table.std tr.out td.rank::before {
   color: var(--ink-3);
 }
 
-/* ikon bola dari assets/ball.png */
-.ball {
-  position: relative;
-  border-radius: 50%;
-  background: #fff;
-}
-.ball > i {
-  position: absolute;
-  inset: 0;
-  background: var(--b);
-  -webkit-mask: url("../assets/ball.png") center / contain no-repeat;
-  mask: url("../assets/ball.png") center / contain no-repeat;
-}
-
 /* gol di scorebox: bola tim kanan di tepi kanan (lurus); tag P/OG ringkas di TV */
 .scorebox .scorers p {
   gap: 6px;
@@ -3282,7 +3273,7 @@ table.std tr.out td.rank::before {
   }
 }
 
-/* ---------- Ikon bola vektor (menggantikan ball.png) ---------- */
+/* ---------- Ikon bola vektor ---------- */
 .ball {
   background: none !important;
   border-radius: 0;
@@ -3990,9 +3981,15 @@ table.std .tmrow .tbadge:not(:has(> img)) {
   background: #fff;
   color: #0d2038;
 }
-.fe-ball svg {
+.fe-ball .ball {
   width: 24px;
   height: 24px;
+  display: block;
+}
+.fe-ball svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 .fe-score {
   display: flex;
@@ -4217,29 +4214,7 @@ table.std .tmrow .tbadge:not(:has(> img)) {
   letter-spacing: 0;
 }
 
-/* ---------- Klasemen gaya liga: label status, ikon form, keterangan, ringkasan lolos ---------- */
-.stchip {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-.stchip.q {
-  background: rgba(32, 128, 217, 0.14);
-  color: #14589b;
-}
-.stchip.out {
-  background: rgba(214, 33, 47, 0.12);
-  color: #a3141f;
-}
-.stchip.tie {
-  background: rgba(237, 190, 109, 0.32);
-  color: #7a5410;
-}
+/* ---------- Klasemen gaya liga: ikon form, keterangan ---------- */
 i.fm {
   display: inline-grid;
   place-items: center;
@@ -4341,72 +4316,6 @@ i.fm + i.fm.last {
   padding-left: 20px;
   margin-top: 6px;
 }
-.qsum {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-top: 8px;
-}
-.qcol {
-  background: var(--surface);
-  border-radius: 14px;
-  padding: 12px 14px;
-  border-top: 4px solid var(--rule);
-}
-.qcol.q {
-  border-top-color: #2080d9;
-}
-.qcol.out {
-  border-top-color: #d6212f;
-}
-.qcol.wait {
-  border-top-color: #edbe6d;
-}
-.qcol h3 {
-  font-size: 16px;
-  margin: 0 0 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.qcol h3 em {
-  font-style: normal;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-3);
-}
-.qcol ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.qcol li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  padding: 6px 0;
-  border-top: 1px solid var(--rule);
-}
-.qcol li:first-child {
-  border-top: 0;
-}
-.qcol li b {
-  flex: none;
-  min-width: 30px;
-  text-align: center;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--ink-2);
-}
-.qcol .empty {
-  font-size: 14px;
-  margin: 0;
-}
-
 /* Tabel klasemen publik: garis warna di kiri baris (biru lolos, merah gugur, emas adu penalti) */
 table.std.lgt tr.q td,
 table.std.lgt tr.out td,

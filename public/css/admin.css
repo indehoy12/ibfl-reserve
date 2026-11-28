@@ -3322,21 +3322,7 @@ body.admin {
   color: var(--ink-2);
 }
 
-/* ikon bola dari assets/ball.png */
-.ball {
-  position: relative;
-  border-radius: 50%;
-  background: #fff;
-}
-.ball > i {
-  position: absolute;
-  inset: 0;
-  background: var(--b);
-  -webkit-mask: url("../assets/ball.png") center / contain no-repeat;
-  mask: url("../assets/ball.png") center / contain no-repeat;
-}
-
-/* ---------- Ikon bola vektor (menggantikan ball.png) ---------- */
+/* ---------- Ikon bola vektor ---------- */
 .ball {
   background: none !important;
   border-radius: 0;
