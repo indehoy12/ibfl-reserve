@@ -10,12 +10,13 @@ import { buildXlsx, zipBlob, toCsv } from "./exporter.js";
 import { logoOf } from "./logos.js";
 import { byEntry } from "./util.js";
 import {
-  STAGES, esc, timeStr, dayShort, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
+  STAGES, esc, timeStr, dayShort, toDate, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
   planKnockout, autoFillPlan, knockoutEligible, knockoutTeamProblems, computeBracket, unresolvedTies, finalScore, scoreFromEvents, matchReadiness, lineupIds, FUTSAL_STARTERS, LINEUP_MAX, nowMs, syncServerTime, ballSvg,
   phaseOf, isPlayPhase, stampAt, stampNow, eventMinute, minuteNow, eventCmp, livePill, ftText, isReadyToStart, phaseActions,
   timingOf, cfgFor, isKnockout, PHASE_NAME, PAUSE_REASONS, periodLimitSec, computeKeeperStats, keeperDetail, teamProgress, skeleton,
   shootout, penDots, PEN_ROUNDS, rtClockHtml, tickRtClocks, computeStandings, computePlayerStats, topBy,
-  computeSuspensions, suspendedIn, warnedIn, suspReason, onCourtIds, gkNow, eventSide, cardTotals,
+  allStatus, standingsTableHtml, standingLegendHtml, qualSummaryHtml, STATUS_TEXT,
+  courtName, TOURNAMENT, computeSuspensions, suspendedIn, warnedIn, suspReason, onCourtIds, gkNow, eventSide, cardTotals,
 } from "./util.js";
 
 const $app = document.getElementById("app");
@@ -228,7 +229,7 @@ function loginView() {
 // Menu bercabang. Kunci = nama halaman di alamat (#kunci).
 const NAV = [
   { title: "Dashboard", items: [["dashboard", "Ringkasan"]] },
-  { title: "Pertandingan", items: [["matches", "Semua pertandingan"], ["match-add", "Tambah pertandingan"]] },
+  { title: "Pertandingan", items: [["matches", "Semua pertandingan"], ["standings", "Klasemen & lolos"], ["match-add", "Tambah pertandingan"]] },
   { title: "Tim & Pemain", items: [["teams", "Daftar tim"], ["group-setup", "Susun grup"], ["team-stats", "Statistik tim"], ["team-add", "Tambah tim"]] },
   { title: "Pengaturan", items: [["set-announce", "Pengumuman"], ["set-timing", "Durasi pertandingan"], ["set-keeper", "Kiper terbaik"], ["set-backup", "Backup & unduh data"], ["set-export", "Ekspor ke Excel"], ["set-reset", "Hapus data"]] },
 ];
@@ -296,7 +297,7 @@ function dashboardView() {
   return `<h1 class="page">Dashboard</h1>${alertCard}${champPanel()}${suspCard()}${kpis}
     <div class="dgrid">${liveCard}${nextCard}</div>${prog}
     <div class="dgrid">${lastCard}${scCard}</div>
-    <div class="panel"><h2 class="a">Klasemen sementara</h2><div class="dstds">${stdCard || `<p class="empty">Belum ada grup.</p>`}</div></div>`;
+    <div class="panel"><h2 class="a">Klasemen sementara <a class="lnk" style="font-size:14px;font-weight:600;margin-left:8px" href="#standings">Lihat lengkap dan siapa yang lolos</a></h2><div class="dstds">${stdCard || `<p class="empty">Belum ada grup.</p>`}</div></div>`;
 }
 
 // --- Daftar pertandingan ---
@@ -305,13 +306,14 @@ function matchForm(m) {
   // Setelah laga dimulai, fase dan tim dikunci (line up dan kejadian terikat pada tim ini). Jadwal/jam tetap bisa diubah.
   const locked = !!m && m.status !== "scheduled", dis = locked ? "disabled" : "";
   return `<form data-form="match" ${m ? `data-id="${esc(m.id)}"` : ""}>
-    ${locked ? `<p class="hint">Laga sudah dimulai: fase dan tim tidak bisa diubah. Untuk memperbaiki gol atau kartu pakai tombol <b>Ubah</b> di riwayat kejadian laga itu.</p>` : ""}
+    ${locked ? `<p class="hint">Laga sudah jalan, jadi tim dan fase dikunci. Salah gol atau kartu? Tekan <b>Ubah</b> di riwayat kejadian.</p>` : ""}
     <div class="grid2"><div><label>Fase</label><select name="stage" ${dis}>${stageOptions(k.stage)}</select></div>
       <div><label>Matchday</label><input type="number" name="matchday" min="1" value="${k.matchday ?? 1}"></div></div>
     <div class="grid2"><div><label>Tim A</label><select name="teamA" ${dis}>${teamOptions(k.teamA, undefined, k.stage)}</select></div>
       <div><label>Tim B</label><select name="teamB" ${dis}>${teamOptions(k.teamB, undefined, k.stage)}</select></div></div>
     <div class="grid2"><div><label>Urutan bagan (QF 1–4, SF 1–2)</label><input type="number" name="slot" min="1" max="4" value="${k.slot ?? ""}" placeholder="otomatis dari jam"></div><div></div></div>
-    <label>Tanggal &amp; jam (WIB)</label><input type="datetime-local" name="kickoff" value="${toLocalInput(k.kickoff)}">
+    <div class="grid2"><div><label>Tanggal &amp; jam (WIB)</label><input type="datetime-local" name="kickoff" value="${toLocalInput(k.kickoff)}"></div>
+      <div><label>Lapangan</label><select name="court"><option value="">— belum ditentukan —</option>${TOURNAMENT.courts.map((c, i) => `<option value="${i + 1}" ${k.court === i + 1 ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div></div>
     <div class="form-actions"><button class="btn orange" type="submit">${m ? "Simpan jadwal" : "Tambah pertandingan"}</button></div>
   </form>`;
 }
@@ -320,8 +322,8 @@ function addMatchCard() {
   const tab = ui.tabs.addMatch || "manual";
   const body = tab === "paste"
     ? `<form data-form="import-matches">
-      <p class="hint">Satu laga per baris, dipisah tanda <b>|</b>:<br><code>tanggal jam | grup atau fase | matchday | tim A | tim B</code><br>
-      Contoh:<br><code>2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2</code><br><code>2026-12-04 19:30 | final | 1 | | </code><br>
+      <p class="hint">Satu laga per baris, dipisah tanda <b>|</b>:<br><code>tanggal jam | grup atau fase | matchday | tim A | tim B | lapangan (A atau B, opsional)</code><br>
+      Contoh:<br><code>2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2 | A</code><br><code>2026-12-04 19:30 | final | 1 | | </code><br>
       Fase: huruf grup (A, B, …) atau <b>qf</b>, <b>sf</b>, <b>final</b>. Nama tim harus sama dengan yang sudah dibuat; untuk fase gugur tim boleh dikosongkan dulu.<br>Bila jam belum ditentukan, tulis <b>TBD</b> di kolom tanggal: <code>TBD | final | 5 | | </code>.</p>
       <textarea name="text" placeholder="2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2"></textarea>
       <div class="form-actions"><button class="btn orange" type="submit">Impor jadwal</button></div></form>`
@@ -332,6 +334,20 @@ function matchAddView() {
   return `<h1 class="page">Tambah pertandingan</h1>${addMatchCard()}`;
 }
 
+// Atur ulang jadwal massal: hujan (geser jam), lapangan tidak bisa dipakai (pindah lapangan). Hanya laga yang belum mulai.
+function rescheduleCard(sched) {
+  if (!sched.some((m) => m.kickoff)) return "";
+  const opts = (blank, clear = "") => `<option value="">${blank}</option>${TOURNAMENT.courts.map((c, i) => `<option value="${i + 1}">${esc(c)}</option>`).join("")}${clear ? `<option value="none">${clear}</option>` : ""}`;
+  return `<details class="panel fold"><summary><b>Atur ulang jadwal</b> (hujan, lapangan tidak bisa dipakai)</summary>
+    <form data-form="reschedule">
+      <p class="hint">Hanya untuk laga yang <b>belum dimulai</b>. Sebelum disimpan, ada ringkasan laga yang berubah. Jangan lupa kabari penonton lewat Pengumuman.</p>
+      <div class="grid2"><div><label>Laga di</label><select name="scope">${opts("Semua lapangan")}</select></div>
+        <div><label>Mulai dari jam (kosongkan = semua laga belum mulai)</label><input type="datetime-local" name="from"></div></div>
+      <div class="grid2"><div><label>Geser (menit; minus = lebih awal)</label><input type="number" name="minutes" step="5" placeholder="mis. 30" inputmode="numeric"></div>
+        <div><label>Pindahkan ke</label><select name="moveTo">${opts("Tidak dipindah", "Kosongkan lapangan")}</select></div></div>
+      <div class="form-actions"><button class="btn orange" type="submit">Terapkan</button></div>
+    </form></details>`;
+}
 function matchesView() {
   const all = [...state.matches];
   const live = all.filter((m) => m.status === "live").sort(sortByKickoff);
@@ -343,22 +359,37 @@ function matchesView() {
     const flag = m.status === "scheduled" ? (miss.length ? `<span class="flag warn">Line up kurang</span>` : `<span class="flag ok">Siap dimulai</span>`) : m.status === "live" ? statusPill(m) : "";
     return `<a class="arow ${m.status === "live" ? "is-live" : ""}" href="#match/${esc(m.id)}">
       <div class="when">${m.kickoff ? dayShort(m.kickoff) : "–"}<b>${timeStr(m.kickoff)}</b></div>
-      <div class="vs"><span>${esc(sideName(m, "A"))} ${m.status === "scheduled" ? "vs" : `<em>${m.scoreA ?? 0} – ${m.scoreB ?? 0}</em>`} ${esc(sideName(m, "B"))}</span><small>${sub}</small></div>
+      <div class="vs"><span>${esc(sideName(m, "A"))} ${m.status === "scheduled" ? "vs" : `<em>${m.scoreA ?? 0} – ${m.scoreB ?? 0}</em>`} ${esc(sideName(m, "B"))}</span><small>${sub}${courtName(m) ? " · " + esc(courtName(m)) : ""}</small></div>
       <div class="rt">${flag}<span class="go">${m.status === "live" ? "Kontrol" : m.status === "ft" ? "Lihat" : "Kelola"}</span></div></a>`;
   };
   const sec = (title, list) => list.length ? `<h2 class="sect">${title} <span>${list.length}</span></h2><div class="panel list">${list.map(row).join("")}</div>` : "";
   const plan = planKnockout(state.teams, state.matches, state.events);
   const koCard = plan.length ? `<div class="panel ko-fill"><h2 class="a">Pasangan babak gugur belum terisi</h2>
-    <p class="hint">Biasanya terisi otomatis. Kartu ini hanya muncul bila pengisian otomatis belum berhasil (mis. koneksi terputus): <b>${plan.map((x) => esc(x.name)).join(", ")}</b>. Tekan tombol untuk mengisi sekarang. Tim yang sudah terisi tidak diubah.</p>
+    <p class="hint">Biasanya terisi sendiri. Kalau belum (mis. koneksi putus), tekan tombol di bawah: <b>${plan.map((x) => esc(x.name)).join(", ")}</b>. Tim yang sudah terisi tidak berubah.</p>
     <div class="btns"><button class="btn orange" data-act="fill-ko">Isi pasangan sekarang</button></div></div>` : "";
   const ties = unresolvedTies(state.teams, state.matches, state.events);
   const tieCard = ties.map((t, n) => `<form class="panel ko-fill" data-form="tiebreak" data-id="${n}"><h2 class="a">Grup ${esc(t.group)}: seri penuh, tentukan lewat adu penalti</h2>
-    <p class="hint">Poin, GM, head to head, selisih gol, dan kartu sama. Setelah adu penalti/undian, isi urutan akhir (1 = paling atas) lalu simpan.</p>
+    <p class="hint">Semua penentu urutan sama. Setelah adu penalti, isi urutan akhirnya (1 = paling atas) lalu simpan.</p>
     ${t.rows.map((r) => `<div class="tie-row"><span>${esc(r.name)}</span><input type="number" name="tb-${esc(r.teamId)}" min="1" max="${t.rows.length}" required inputmode="numeric" aria-label="Urutan ${esc(r.name)}"></div>`).join("")}
     <div class="btns"><button class="btn orange" type="submit">Simpan urutan</button></div></form>`).join("");
-  return `<h1 class="page">Pertandingan</h1>${tieCard}${koCard}
+  return `<h1 class="page">Pertandingan</h1>${tieCard}${koCard}${rescheduleCard(sched)}
   ${sec("Sedang berlangsung", live)}${sec("Akan datang", sched)}${sec("Selesai", done)}
   ${all.length ? "" : `<div class="panel"><p class="empty">Belum ada pertandingan. Tambahkan lewat menu <a class="lnk" href="#match-add">Tambah pertandingan</a>.</p></div>`}`;
+}
+
+// Klasemen lengkap bergaya liga + siapa yang lolos / tidak lolos.
+function standingsView() {
+  const std = computeStandings(state.teams, state.matches, state.events);
+  const gs = Object.keys(std).filter((g) => std[g]?.length).sort();
+  if (!gs.length) return `<h1 class="page">Klasemen & lolos</h1><div class="panel"><p class="empty">Klasemen tampil setelah tim dimasukkan ke grup. Atur lewat menu <a class="lnk" href="#group-setup">Susun grup</a>.</p></div>`;
+  const stat = allStatus(std, state.matches, state.teams);
+  const ties = unresolvedTies(state.teams, state.matches, state.events);
+  const tieNote = ties.length ? `<div class="panel warnbox"><b>${ties.length} grup masih seri penuh</b> di batas lolos (${ties.map((t) => "Grup " + esc(t.group)).join(", ")}). Isi urutan hasil adu penalti di menu <a class="lnk" href="#matches">Semua pertandingan</a>.</div>` : "";
+  const tables = gs.map((g) => `<div class="panel lgpanel"><h2 class="a">Grup ${esc(g)}</h2>${standingsTableHtml(std[g], stat[g], { badge: (id) => badge(state.teamById[id]), optClass: "lgo" })}</div>`).join("");
+  return `<h1 class="page">Klasemen & lolos</h1>${tieNote}
+    <div class="panel"><h2 class="a">Siapa yang lolos</h2>${qualSummaryHtml(std, stat)}</div>
+    <div class="lggrid">${tables}</div>
+    <div class="panel"><h2 class="a">Keterangan</h2>${standingLegendHtml(true)}</div>`;
 }
 
 // Adu penalti: hanya untuk babak gugur yang skornya seri. Tiap tendangan dicatat (Gol/Gagal), pemenang dihitung otomatis.
@@ -386,7 +417,7 @@ function penForm(m) {
       <p class="hint pen-status">${status}</p>
       <div class="btns"><button class="btn ghost" data-act="pen-undo" data-id="${id}" ${so.any ? "" : "disabled"}>Batalkan tendangan terakhir</button></div></div>` : so.any ? `<p class="hint">Hasil tendangan: ${so.goals.A} – ${so.goals.B}.</p>` : ""}
     <form data-form="pen" data-id="${id}">
-      <p class="hint">${live ? "Cadangan (bila perlu): pilih pemenang manual. Ini mengosongkan tendangan yang sudah dicatat." : "Pemenang adu penalti."} Wajib ada pemenang sebelum laga bisa diakhiri. Pemenang otomatis lanjut ke babak berikutnya.</p>
+      <p class="hint">${live ? "Cadangan (bila perlu): pilih pemenang manual. Ini mengosongkan tendangan yang sudah dicatat." : "Pemenang adu penalti."} Laga baru bisa diakhiri kalau sudah ada pemenang, dan pemenangnya langsung lanjut ke babak berikutnya.</p>
       <div class="grid2"><select name="pen"><option value="">— belum dipilih —</option><option value="A" ${m.penWinner === "A" ? "selected" : ""}>${esc(sideName(m, "A"))}</option><option value="B" ${m.penWinner === "B" ? "selected" : ""}>${esc(sideName(m, "B"))}</option></select>
       <button class="btn ghost" type="submit">Simpan manual</button></div></form></div>`;
 }
@@ -438,7 +469,7 @@ function suspPanel(m) {
       <div class="btns">${btns}
       ${o.overridden ? `<button type="button" class="btn sm ghost" data-act="susp-set" data-id="${esc(o.key)}" data-len="">Kembalikan otomatis</button>` : ""}</div></div>`;
   })).join("");
-  return rows ? `<div class="susp"><h3>Skorsing untuk laga ini</h3><p class="hint">Kartu merah (termasuk dua kuning di satu laga) otomatis memblokir pemain dari line up. Akumulasi kuning di laga berbeda hanya peringatan: panitia memilih Terapkan skorsing atau Abaikan.</p>${rows}</div>` : "";
+  return rows ? `<div class="susp"><h3>Skorsing untuk laga ini</h3><p class="hint">Kartu merah (atau dua kuning di satu laga) langsung memblokir pemain dari line up. Kuning dari laga berbeda hanya peringatan: pilih Terapkan skorsing atau Abaikan.</p>${rows}</div>` : "";
 }
 const playerOpts = (ids) => ids.map((id) => state.playerById[id]).filter(Boolean).sort(byNumber).map((p) => `<option value="${esc(p.id)}">${p.number ?? "–"} · ${esc(p.name)}${p.isGK ? " (GK)" : ""}</option>`).join("");
 const uniq = (l) => [...new Set(l.filter(Boolean))];
@@ -477,7 +508,7 @@ function courtPanel(m) {
   };
   const last = (m.subLog || []).at(-1), subs = (m.subLog || []).length;
   return `<div class="panel"><h2 class="a">Kiper</h2>
-    <p class="hint">Ganti kiper hanya bisa dengan kiper lain di line up tim yang sama (tim dengan 1 kiper tidak bisa ganti). Power play = main tanpa kiper. Kebobolan dibebankan ke kiper yang sedang jaga saat gol terjadi.</p>
+    <p class="hint">Kiper hanya bisa diganti dengan kiper lain di line up tim yang sama. Power play = main tanpa kiper. Gol kemasukan dicatat ke kiper yang sedang jaga.</p>
     <div class="court">${box("A")}${box("B")}</div>
     ${last ? `<p class="hint">${subs} ganti kiper tercatat. Terakhir: ${esc(pName(last.in))} masuk menggantikan ${esc(pName(last.out))} (${esc(sideName(m, last.s))}) ${eventMinute(last)}. <button type="button" class="btn sm ghost" data-act="sub-undo" data-id="${esc(m.id)}">Batalkan ganti kiper terakhir</button></p>` : ""}</div>`;
 }
@@ -537,7 +568,7 @@ function lineupEditor(m) {
       }).join("") || `<p class="hint">Belum ada pemain di tim ini.</p>`}</div></div>`;
   };
   const probs = draftProblems(m, d);
-  return `<p class="hint">Ketuk pemain: sekali = Inti, dua kali = Cadangan, tiga kali = batal. Inti harus 5 pemain dan wajib ada kiper (slot inti terakhir hanya bisa diisi kiper bila belum ada). Line up (inti + cadangan) maksimal ${LINEUP_MAX} pemain per tim, walau tim boleh mendaftarkan sampai ${LIMITS.players} pemain.</p>
+  return `<p class="hint">Ketuk pemain: sekali = Inti, dua kali = Cadangan, tiga kali = batal. Inti 5 pemain dan harus ada kiper. Line up (inti + cadangan) maksimal ${LINEUP_MAX} pemain, walau tim boleh mendaftarkan sampai ${LIMITS.players}.</p>
     ${suspPanel(m)}
     <div class="lu-cols">${col("A")}${col("B")}</div>
     ${probs.length ? `<p class="problems">${probs.map(esc).join(" · ")}</p>` : `<p class="okline">Susunan inti lengkap.</p>`}
@@ -700,8 +731,8 @@ function manageCard(m, allPlayers) {
   } else {
     const delBtn = `<div class="btns"><button class="btn danger" data-act="del-match" data-id="${esc(id)}">Hapus pertandingan ini</button></div>`;
     body = m.status === "scheduled"
-      ? `<p class="hint">Laga belum dimulai, jadi belum ada yang perlu dikoreksi. Kalau tim lawan tidak hadir, pakai <b>Menang WO</b> di atas. Hapus hanya bila laga ini salah dibuat (dobel atau salah tim).</p>${delBtn}`
-      : `${m.status === "ft" ? addEventForm(m) : ""}<form data-form="score" data-id="${esc(id)}"><p class="hint">Skor otomatis dari gol yang dicatat. Pakai ini hanya bila skor laga perlu dipaksa. Koreksi tetap berlaku bila ada gol baru.</p>
+      ? `<p class="hint">Laga belum dimulai, jadi belum ada yang dikoreksi. Lawan tidak hadir? Pakai <b>Menang WO</b> di atas. Hapus hanya kalau laga ini salah dibuat.</p>${delBtn}`
+      : `${m.status === "ft" ? addEventForm(m) : ""}<form data-form="score" data-id="${esc(id)}"><p class="hint">Skor otomatis dari gol yang dicatat. Isi ini hanya kalau skor perlu dipaksa.</p>
       <div class="grid2"><div><label>Skor ${esc(sideName(m, "A"))}</label><input type="number" name="a" min="0" value="${m.scoreA ?? 0}"></div>
       <div><label>Skor ${esc(sideName(m, "B"))}</label><input type="number" name="b" min="0" value="${m.scoreB ?? 0}"></div></div>
       <div class="form-actions"><button class="btn ghost" type="submit">Simpan skor</button></div></form>
@@ -736,7 +767,7 @@ function phaseNote(m) {
   if (p === "pen") return "Adu penalti: pilih pemenang di bawah. Gol adu penalti tidak dicatat sebagai gol.";
   if (m.pause) return `Jam berhenti (${m.pause.label}) dan tampil di layar penonton. Tekan Lanjutkan jam saat laga bermain lagi.`;
   const tieKo = isKnockout(m) && (m.scoreA ?? 0) === (m.scoreB ?? 0) && (p === "h2");
-  return "Jam berjalan otomatis dan menit kejadian terisi sendiri. Di akhir babak jam tidak berhenti paksa (tampil +1', +2'); tekan tombol Akhiri saat wasit meniup peluit." + (tieKo ? " Skor seri di babak gugur: pilih perpanjangan waktu atau langsung adu penalti." : "");
+  return "Jam berjalan otomatis dan menit kejadian terisi sendiri. Di akhir babak jam tidak berhenti paksa (tampil +1', +2'); tekan tombol Akhiri saat wasit meniup peluit." + (tieKo ? ((m.cfg || cfgFor(m)).etHalf ? " Skor seri di babak gugur: pilih perpanjangan waktu atau langsung adu penalti." : " Skor seri di babak gugur: lanjut ke adu penalti.") : "");
 }
 
 function matchAdminView(id) {
@@ -746,6 +777,7 @@ function matchAdminView(id) {
   const p = phaseOf(m);
   const miss = [...matchReadiness(m, state.players), ...(m.status === "scheduled" ? suspProblems(m) : [])];
   const sub = m.stage === "group" || !m.stage ? "Grup " + esc(m.group || "?") + ", matchday " + esc(m.matchday ?? 1) : STAGES[m.stage];
+  const court = courtName(m);
   const when = m.kickoff ? dayShort(m.kickoff) + ", " + timeStr(m.kickoff) : "Waktu akan ditentukan";
 
   // papan skor + tombol jam
@@ -755,7 +787,7 @@ function matchAdminView(id) {
   if (m.status === "ft") ctrl = `<button class="btn ghost big" data-act="reopen" data-id="${esc(id)}">Buka kembali untuk koreksi</button>`;
 
   const board = `<div class="board ${m.status === "live" ? "is-live" : ""}">
-    <div class="b-meta"><span>${sub} · ${when}</span>${statusPill(m)}</div>
+    <div class="b-meta"><span>${sub} · ${when}${court ? " · " + esc(court) : ""}</span>${statusPill(m)}</div>
     <div class="b-row"><div class="b-team">${esc(sideName(m, "A"))}</div><div class="b-score">${m.scoreA ?? 0}<i>–</i>${m.scoreB ?? 0}</div><div class="b-team r">${esc(sideName(m, "B"))}</div></div>
     ${m.status === "live" ? `<div class="b-phase">${esc(PHASE_NAME[p] || "")}</div><div class="b-clock" data-clockbig="${esc(id)}">${clockText(m)}</div>` : ""}
     ${m.status === "ft" ? `<div class="b-phase">${ftText(m)}</div>` : ""}
@@ -798,7 +830,7 @@ function matchAdminView(id) {
 
   const woCard = m.status === "scheduled" && m.teamA && m.teamB
     ? `<details class="panel fold"><summary>Menang WO (tim lawan tidak hadir)</summary>
-      <form data-form="wo" data-id="${esc(id)}"><p class="hint">Laga langsung selesai tanpa line up dan hasilnya masuk klasemen. Tidak ada gol/kartu yang tercatat, jadi tidak memengaruhi top scorer maupun statistik kiper. Skor WO ditentukan panitia (umumnya 3 – 0).</p>
+      <form data-form="wo" data-id="${esc(id)}"><p class="hint">Laga langsung selesai tanpa line up dan masuk klasemen. Tidak ada gol atau kartu yang tercatat. Skor WO ditentukan panitia (biasanya 3 – 0).</p>
       <div class="grid3"><div><label for="wo-w">Pemenang</label><select id="wo-w" name="winner"><option value="A">${esc(sideName(m, "A"))}</option><option value="B">${esc(sideName(m, "B"))}</option></select></div>
         <div><label for="wo-s">Skor pemenang</label><input id="wo-s" type="number" name="w" min="0" value="3"></div>
         <div><label for="wo-l">Skor tim absen</label><input id="wo-l" type="number" name="l" min="0" value="0"></div></div>
@@ -876,7 +908,7 @@ function groupSetupView() {
       return `<div class="slotrow"><b class="slotno">${i + 1}</b><select data-g="${esc(g)}" data-p="${i + 1}" data-k="${esc(key)}"><option value="">— kosong —</option>${teams.map((t) => `<option value="${esc(t.id)}"${want === t.id ? " selected" : ""}>${esc(t.name)}</option>`).join("")}</select></div>`;
     }).join("")}</section>`;
   }).join("");
-  return `${head}<p class="hint">Isi sesuai urutan keluar di undian: posisi 1 = tim yang keluar pertama untuk grup itu, posisi 2 = yang kedua, dan seterusnya. Urutan ini menjadi urutan awal klasemen sebelum ada pertandingan. Satu tim hanya bisa dipilih sekali.</p>
+  return `${head}<p class="hint">Isi sesuai urutan keluar di undian (posisi 1 = keluar pertama di grup itu, dst). Urutan ini jadi urutan awal klasemen. Satu tim hanya bisa dipilih sekali.</p>
   <form data-form="group-setup"><div class="tgroups">${cards}</div><div class="form-actions"><button class="btn orange" type="submit">Simpan susunan grup</button></div></form>`;
 }
 
@@ -896,7 +928,7 @@ function teamStatsView() {
     <div class="tscroll"><table class="stbl"><thead><tr><th class="l">Tim</th><th>Grup</th><th>Main</th><th>M</th><th>S</th><th>K</th><th>Gol</th><th>KB</th><th>Assist</th><th><i class="card y"></i></th><th><i class="card r"></i></th></tr></thead>
     <tbody>${rows.map(({ t, s: x }) => `<tr><td class="l"><a class="lnk" href="#team/${esc(t.id)}">${esc(t.name)}</a></td><td>${esc(t.group || "–")}</td><td>${x.played}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td><b>${x.gf}</b></td><td>${x.ga}</td><td>${x.assists}</td><td>${x.yellow}</td><td>${x.red}</td></tr>`).join("")}</tbody>
     <tfoot><tr><td class="l">Total</td><td></td><td></td><td></td><td></td><td></td><td>${sum("gf")}</td><td></td><td>${sum("assists")}</td><td>${sum("yellow")}</td><td>${sum("red")}</td></tr></tfoot></table></div>
-    <p class="hint">Gol = gol memasukkan dan KB = kebobolan, dihitung dari laga selesai. Kartu dihitung dari semua kejadian. Semua angka ikut ke file Excel (Pengaturan → Ekspor ke Excel).</p></div>`;
+    <p class="hint">Gol = gol masuk, KB = kebobolan (dari laga selesai). Kartu dihitung dari semua kejadian. Angka ini ikut ke file Excel.</p></div>`;
 }
 function histRows(list, mode) {
   return list.length ? list.map((h) => `<a class="hrow" href="#match/${esc(h.m.id)}"><span>${rchip(h.r)}</span>
@@ -961,7 +993,7 @@ function teamView(id) {
         <div><b>${logoOf(t) ? "Logo unggahan" : "Belum ada logo"}</b>
           <p class="hint" style="margin:4px 0 0">Unggah logo tim sendiri. Tanpa logo, tim tampil dengan lingkaran singkatan nama.</p></div></div>
       <div class="logo-up"><label>${logoOf(t) ? "Ganti logo" : "Unggah logo"}</label><input type="file" accept="image/*" data-logo="${esc(t.id)}">
-        <p class="hint">PNG latar transparan atau SVG, sebaiknya 512 px ke atas supaya tajam di layar besar. Ruang kosong di sekitar logo dipangkas otomatis, dan logo lurus/memanjang tidak perlu dibuat persegi: kotaknya menyesuaikan bentuk logo.</p></div>
+        <p class="hint">PNG transparan atau SVG, minimal 512 px biar tajam. Ruang kosong di pinggir dipangkas otomatis, dan logo memanjang tidak perlu dibuat persegi.</p></div>
       ${logoOf(t) ? `<button class="btn sm danger mini" style="margin-top:12px" data-act="del-logo" data-id="${esc(t.id)}">Hapus logo (pakai singkatan)</button>` : ""}
     </div>
     <div class="panel"><h2 class="a">Pemain <span class="cntb">${roster.length}/${LIMITS.players}</span></h2>
@@ -1013,15 +1045,16 @@ function timingView() {
   const t = timingOf(state.settings), g1 = t.groupHalves === 1;
   const num = (name, label, v, lo, hi) => `<div><label for="tm-${name}">${label}</label><input id="tm-${name}" type="number" name="${name}" min="${lo}" max="${hi}" step="1" value="${v}" inputmode="numeric"></div>`;
   return `<h1 class="page">Durasi pertandingan</h1><div class="panel"><form data-form="timing">
-    <p class="hint" style="margin-top:0">Jam hitung maju dan mulai dari 0 di tiap babak. Nilai ini dibekukan saat laga dimulai, jadi mengubahnya tidak mengganggu laga yang sedang berjalan.</p>
+    <p class="hint" style="margin-top:0">Jam menghitung maju dari 0 di tiap babak. Laga yang sudah jalan tidak terpengaruh kalau durasi diubah.</p>
     <div class="grid2"><div><label for="tm-groupHalves">Babak grup dimainkan</label><select id="tm-groupHalves" name="groupHalves"><option value="2" ${g1 ? "" : "selected"}>2 babak + istirahat</option><option value="1" ${g1 ? "selected" : ""}>1 babak non-stop</option></select></div>
       ${num("groupHalf", "Grup: menit per babak", t.groupHalf, 1, 45)}</div>
     <p class="hint">Bila 1 babak non-stop, isi durasi totalnya (mis. 20). Contoh bawaan: 2 × 10 menit.</p>
     <div class="grid2">${num("koHalf", "Babak gugur (QF dan SF): menit per babak", t.koHalf, 1, 45)}<div><label for="tm-finalHalf">Final: menit per babak</label><input id="tm-finalHalf" type="number" name="finalHalf" min="1" max="45" step="1" value="${t.finalHalf || ""}" placeholder="sama dengan babak gugur" inputmode="numeric"></div></div>
-    <p class="hint">Kosongkan durasi Final bila sama dengan QF dan SF. Isi mis. 20 bila Final dimainkan 2 × 20 menit.</p>
-    <div class="grid2">${num("etHalf", "Perpanjangan waktu: menit per babak", t.etHalf, 1, 15)}<div></div></div>
+    <p class="hint">Kosongkan durasi Final kalau sama dengan QF dan SF.</p>
+    <div class="grid2">${num("etHalf", "Perpanjangan waktu: menit per babak", t.etHalf, 0, 15)}<div></div></div>
+    <p class="hint">Isi 0 untuk meniadakan perpanjangan waktu: laga QF dan SF yang seri langsung adu penalti.</p>
     <div class="grid2">${num("breakMin", "Istirahat antar babak (menit)", t.breakMin, 0, 20)}${num("etBreakMin", "Istirahat ET1 ke ET2 (menit)", t.etBreakMin, 0, 10)}</div>
-    <p class="hint">Aturan futsal (FIFA): 2 × 20 menit, istirahat maksimal 15 menit, perpanjangan 2 × 5 menit, lalu adu penalti. Durasi di sini mengikuti keputusan panitia.</p>
+    <p class="hint">Sebagai patokan, aturan futsal FIFA: 2 × 20 menit. Durasi di sini mengikuti keputusan panitia.</p>
     <div class="form-actions"><button class="btn orange" type="submit">Simpan durasi</button></div></form></div>`;
 }
 // Kiper terbaik: kartu urut dari nilai terbaik. Ketuk kartu = panitia memilih kiper itu.
@@ -1050,13 +1083,13 @@ function keeperView() {
     <p class="lead">Dipilih oleh panitia, tidak otomatis. Ketuk kartu untuk menjadikan kiper itu <b>Kiper terbaik</b>, ketuk lagi untuk membatalkan. Urutan dari nilai terbaik: clean sheet terbanyak, lalu rata-rata kebobolan paling kecil.</p>
     <div class="pick-now ${best ? "has" : ""}">${best ? `Terpilih: <b>${esc(best.name)}</b> · ${esc(tName(best.teamId))}` : "Belum ada kiper terbaik yang dipilih."}</div>
     <div class="kgrid">${cards}</div>
-    <p class="hint">Clean sheet = lawan 0 gol (termasuk perpanjangan waktu). Dihitung dari kiper di susunan inti laga yang sudah FT; gol adu penalti tidak dihitung.</p>`;
+    <p class="hint">Clean sheet = lawan 0 gol (perpanjangan waktu dihitung, adu penalti tidak).</p>`;
 }
 
 // Hapus data: bersihkan semua pertandingan atau semua tim sekaligus
 function exportView() {
   return `<h1 class="page">Ekspor ke Excel</h1><div class="panel"><h2 class="a">Unduh data turnamen</h2>
-    <p class="hint">Satu file .xlsx berisi delapan lembar: Klasemen, Jadwal &amp; hasil, Kejadian (gol dan kartu), Top scorer, Kartu &amp; skorsing, Kiper, Statistik tim, dan Statistik pemain. Data diambil dari kondisi terbaru di layar ini, jadi cocok untuk arsip harian atau laporan ke panitia.</p>
+    <p class="hint">Satu file Excel berisi 8 lembar (klasemen, jadwal &amp; hasil, kejadian, top scorer, kartu, kiper, statistik tim, statistik pemain) dengan data terbaru.</p>
     <div class="btns"><button class="btn orange big" data-act="export-xlsx">Unduh Excel</button></div></div>`;
 }
 function exportSheets() {
@@ -1066,10 +1099,11 @@ function exportSheets() {
   const stage = (m) => (m.stage === "group" || !m.stage ? "Grup " + (m.group || "?") + ", matchday " + (m.matchday ?? 1) : STAGES[m.stage]);
   const mname = (m) => `${sideName(m, "A")} vs ${sideName(m, "B")}`;
   const statusTxt = { scheduled: "Terjadwal", live: "LIVE", ft: "Selesai" };
-  const klasemen = [["Grup", "Posisi", "Tim", "Main", "Menang", "Seri", "Kalah", "Gol memasukkan", "Gol kemasukan", "Selisih", "Poin", "Kuning", "Merah"]];
-  Object.keys(std).sort().forEach((g) => std[g].forEach((r, i) => klasemen.push([g, i + 1, r.name, r.p, r.w, r.d, r.l, r.gf, r.ga, r.gf - r.ga, r.pts, cardsOf(r.teamId, "yellow"), cardsOf(r.teamId, "red")])));
-  const jadwal = [["Tanggal", "Jam (WIB)", "Fase", "Tim A", "Skor A", "Skor B", "Tim B", "Status", "Catatan"]];
-  ms.forEach((m) => jadwal.push([m.kickoff ? dayShort(m.kickoff) : "", m.kickoff ? timeStr(m.kickoff) : "TBD", stage(m), sideName(m, "A"), m.status === "scheduled" ? "" : m.scoreA ?? 0, m.status === "scheduled" ? "" : m.scoreB ?? 0, sideName(m, "B"), statusTxt[m.status] || m.status, m.wo ? "Menang WO" : (shootout(m).any && (m.scoreA ?? 0) === (m.scoreB ?? 0) ? "Adu penalti" : "")]));
+  const klasemen = [["Grup", "Posisi", "Tim", "Main", "Menang", "Seri", "Kalah", "Gol memasukkan", "Gol kemasukan", "Selisih", "Poin", "Kuning", "Merah", "Status"]];
+  const stat = allStatus(std, state.matches, state.teams);
+  Object.keys(std).sort().forEach((g) => std[g].forEach((r, i) => klasemen.push([g, i + 1, r.name, r.p, r.w, r.d, r.l, r.gf, r.ga, r.gf - r.ga, r.pts, cardsOf(r.teamId, "yellow"), cardsOf(r.teamId, "red"), STATUS_TEXT[stat[g][i] || ""]])));
+  const jadwal = [["Tanggal", "Jam (WIB)", "Lapangan", "Fase", "Tim A", "Skor A", "Skor B", "Tim B", "Status", "Catatan"]];
+  ms.forEach((m) => jadwal.push([m.kickoff ? dayShort(m.kickoff) : "", m.kickoff ? timeStr(m.kickoff) : "TBD", courtName(m), stage(m), sideName(m, "A"), m.status === "scheduled" ? "" : m.scoreA ?? 0, m.status === "scheduled" ? "" : m.scoreB ?? 0, sideName(m, "B"), statusTxt[m.status] || m.status, m.wo ? "Menang WO" : (shootout(m).any && (m.scoreA ?? 0) === (m.scoreB ?? 0) ? "Adu penalti" : "")]));
   const label = { goal: "Gol", own_goal: "Gol bunuh diri", yellow: "Kartu kuning", red: "Kartu merah" };
   const kejadian = [["Laga", "Menit", "Tim", "Pemain", "Kejadian", "Assist"]];
   ms.forEach((m) => ev.filter((e) => e.matchId === m.id && label[e.type]).sort(eventCmp).forEach((e) => kejadian.push([mname(m), eventMinute(e), tName(e.teamId), pName(e.playerId), e.type === "goal" && e.pen ? "Gol penalti" : label[e.type], e.assistId ? pName(e.assistId) : ""])));
@@ -1167,7 +1201,7 @@ function backupView() {
       <p class="hint">Satu file ZIP berisi: file backup JSON, laporan Excel (klasemen, jadwal &amp; hasil, gol dan kartu, top scorer, kiper, statistik), CSV untuk tiap lembar laporan, dan CSV data mentah (tim, pemain, pertandingan, kejadian). Cocok untuk arsip akhir turnamen atau dibuka di Excel / Google Sheets.</p>
       <div class="btns"><button class="btn orange big" data-act="backup-zip">Unduh semua (.zip)</button></div></div>
     ${restore}
-    <p class="hint">Saran: unduh backup setiap selesai hari pertandingan dan simpan di dua tempat (misalnya HP dan Google Drive). Bila database bermasalah, pindah layanan, atau data terhapus tidak sengaja, file ini yang menyelamatkan.</p>`;
+    <p class="hint">Saran: unduh backup tiap selesai hari pertandingan, simpan di dua tempat (mis. HP dan Google Drive).</p>`;
 }
 function resetView() {
   const nM = state.matches.length, nE = state.events.length, nT = state.teams.length, nP = state.players.length;
@@ -1185,7 +1219,7 @@ function resetView() {
 let pending = false;
 let lastBar = "", lastKey = "", enterTimer;
 // Skeleton shimmer: saat data belum siap dan sekilas tiap pindah halaman
-const SKEL_KIND = { matches: "list", "match-add": "form", teams: "grid", "team-stats": "list", player: "list", team: "form", "team-add": "form", "group-setup": "grid", settings: "form", "set-announce": "form", "set-timing": "form", "set-keeper": "cards", "set-reset": "form", "set-backup": "form", match: "pos" };
+const SKEL_KIND = { matches: "list", "match-add": "form", teams: "grid", "team-stats": "list", standings: "list", player: "list", team: "form", "team-add": "form", "group-setup": "grid", settings: "form", "set-announce": "form", "set-timing": "form", "set-keeper": "cards", "set-reset": "form", "set-backup": "form", match: "pos" };
 let skelOn = false, skelTimer;
 function startSkeleton() { skelOn = true; clearTimeout(skelTimer); skelTimer = setTimeout(() => { skelOn = false; render(); }, 350); }
 function showSkel(r) {
@@ -1229,6 +1263,7 @@ function render() {
   else if (r.name === "set-export") h = exportView();
   else if (r.name === "set-reset") h = resetView();
   else if (r.name === "set-announce" || r.name === "settings") h = announceView();
+  else if (r.name === "standings") h = standingsView();
   else if (r.name === "matches") h = matchesView();
   else h = dashboardView();
   $app.innerHTML = subNav() + h;
@@ -1828,7 +1863,11 @@ const forms = {
       const bad = knockoutTeamProblems(stage, [teamA, teamB], state.teams, state.matches, state.events);
       if (bad.length && !(await confirmBox(`Tim berikut tidak memenuhi syarat untuk ${STAGES[stage]}:\n• ${bad.join("\n• ")}\n\nLanjutkan hanya untuk kasus darurat, misalnya tim didiskualifikasi atau mundur.`, { title: "Tim tidak berhak tampil", ok: "Ya, tetap simpan", danger: true }))) return;
     }
-    const data = { stage, group, matchday: Number(fd.get("matchday")) || 1, teamA, teamB, kickoff: fromLocalInput(fd.get("kickoff")), slot };
+    const court = Number(fd.get("court")) || null, kickoff = fromLocalInput(fd.get("kickoff"));
+    // Satu lapangan tidak bisa dipakai dua laga pada jam yang sama
+    const clash = court && kickoff ? state.matches.find((x) => x.id !== id && x.court === court && x.kickoff && Math.abs(toDate(x.kickoff) - toDate(kickoff)) < TOURNAMENT.slotMin * 60000) : null;
+    if (clash && !(await confirmBox(`${TOURNAMENT.courts[court - 1]} sudah dipakai ${sideName(clash, "A")} vs ${sideName(clash, "B")} pada ${dayShort(clash.kickoff)}, ${timeStr(clash.kickoff)} (selisih kurang dari ${TOURNAMENT.slotMin} menit).`, { title: "Jadwal lapangan bentrok", ok: "Ya, tetap simpan", danger: true }))) return;
+    const data = { stage, group, matchday: Number(fd.get("matchday")) || 1, teamA, teamB, kickoff, slot, court };
     if (old && !locked) {
       // tim diganti: line up lama milik tim sebelumnya, kosongkan
       if (teamA !== (old.teamA || null)) data.lineupA = { starters: [], subs: [] };
@@ -1843,6 +1882,28 @@ const forms = {
       f.reset();
       toast("Pertandingan ditambahkan");
     }
+  },
+  async reschedule(f) {
+    const fd = new FormData(f), scope = Number(fd.get("scope")) || 0, min = Math.round(Number(fd.get("minutes")) || 0), clear = fd.get("moveTo") === "none", to = clear ? 0 : Number(fd.get("moveTo")) || 0;
+    const from = fromLocalInput(fd.get("from"));
+    if (!min && !to && !clear) throw new Error("Isi menit geser atau pilih lapangan tujuan.");
+    const list = state.matches.filter((m) => m.status === "scheduled" && m.kickoff && (!scope || m.court === scope) && (!from || toDate(m.kickoff) >= from));
+    if (!list.length) throw new Error("Tidak ada laga terjadwal yang cocok.");
+    const first = [...list].sort(sortByKickoff)[0];
+    const what = [min ? `jam ${min > 0 ? "diundur" : "dimajukan"} ${Math.abs(min)} menit` : "", to ? `dipindah ke ${TOURNAMENT.courts[to - 1]}` : "", clear ? "lapangannya dikosongkan" : ""].filter(Boolean).join(" dan ");
+    if (!(await confirmBox(`${list.length} laga ${what}. Laga pertama yang terpengaruh: ${sideName(first, "A")} vs ${sideName(first, "B")}, ${dayShort(first.kickoff)} ${timeStr(first.kickoff)}.`, { title: "Atur ulang jadwal", ok: "Terapkan" }))) return;
+    for (let i = 0; i < list.length; i += 400) {
+      const b = writeBatch(db);
+      list.slice(i, i + 400).forEach((m) => {
+        const d = {};
+        if (min) d.kickoff = new Date(toDate(m.kickoff).getTime() + min * 60000);
+        if (to) d.court = to;
+        if (clear) d.court = null;
+        b.update(matchRef(m.id), d);
+      });
+      await b.commit();
+    }
+    toast(`${list.length} laga diperbarui`);
   },
   async "import-matches"(f) {
     const lines = String(new FormData(f).get("text")).split("\n").map((l) => l.trim()).filter(Boolean);
@@ -1861,8 +1922,11 @@ const forms = {
       const tag = (p[1] || "").trim();
       const stage = /^[A-Za-z]$/.test(tag) ? "group" : stageMap[tag.toLowerCase()];
       const A = (p[3] || "").trim(), B = (p[4] || "").trim();
+      const cv = (p[5] || "").trim().toUpperCase().replace(/^LAPANGAN\s*/, ""), n = /^[A-Z]$/.test(cv) ? cv.charCodeAt(0) - 64 : Number(cv);
+      const court = cv && n >= 1 && n <= TOURNAMENT.courts.length ? n : null;
       const ta = A ? byName[A.toLowerCase()] : null, tb = B ? byName[B.toLowerCase()] : null;
-      if (!tbd && !kickoff) problems.push(`Baris ${i + 1}: tanggal/jam tidak valid ("${dt}"). Tulis TBD bila waktu belum ditentukan.`);
+      if (cv && !court) problems.push(`Baris ${i + 1}: lapangan tidak dikenal ("${p[5].trim()}"). Tulis A atau B.`);
+      else if (!tbd && !kickoff) problems.push(`Baris ${i + 1}: tanggal/jam tidak valid ("${dt}"). Tulis TBD bila waktu belum ditentukan.`);
       else if (!stage) problems.push(`Baris ${i + 1}: grup/fase tidak dikenal ("${tag}")`);
       else if (A && !ta) problems.push(`Baris ${i + 1}: tim "${A}" tidak ditemukan`);
       else if (B && !tb) problems.push(`Baris ${i + 1}: tim "${B}" tidak ditemukan`);
@@ -1871,7 +1935,7 @@ const forms = {
       else docs.push({
         stage, group: stage === "group" ? tag.toUpperCase() : "", matchday: Number(p[2]) || 1,
         slot: stage === "qf" || stage === "sf" ? (++slotCount[stage] <= (stage === "qf" ? 4 : 2) ? slotCount[stage] : null) : null,
-        teamA: ta?.id || null, teamB: tb?.id || null, kickoff, status: "scheduled", scoreA: 0, scoreB: 0,
+        teamA: ta?.id || null, teamB: tb?.id || null, kickoff, court, status: "scheduled", scoreA: 0, scoreB: 0,
         clock: { running: false, baseSec: 0, startedAt: null }, lineupA: { starters: [], subs: [] }, lineupB: { starters: [], subs: [] }, motmId: null, createdAt: Date.now() + i,
       });
     });
@@ -2069,7 +2133,7 @@ const forms = {
       groupHalves: Number(fd.get("groupHalves")) === 1 ? 1 : 2,
       groupHalf: num("groupHalf", 1, 45, "Grup: menit per babak"), koHalf: num("koHalf", 1, 45, "Babak gugur: menit per babak"),
       finalHalf: String(fd.get("finalHalf") ?? "").trim() === "" ? 0 : num("finalHalf", 1, 45, "Final: menit per babak"),
-      etHalf: num("etHalf", 1, 15, "Perpanjangan waktu: menit per babak"), breakMin: num("breakMin", 0, 20, "Istirahat"), etBreakMin: num("etBreakMin", 0, 10, "Istirahat ET"),
+      etHalf: num("etHalf", 0, 15, "Perpanjangan waktu: menit per babak"), breakMin: num("breakMin", 0, 20, "Istirahat"), etBreakMin: num("etBreakMin", 0, 10, "Istirahat ET"),
     };
     await setDoc(doc(db, "settings", "main"), { timing }, { merge: true });
   },

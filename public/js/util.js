@@ -9,9 +9,14 @@ export const TOURNAMENT = {
   short: "IBFL 2026",
   tagline: "Khusus karyawan tenant Industropolis Batang",
   venue: "Sagara Futsal Arena, KEK Industropolis Batang",
+  courts: ["Lapangan A", "Lapangan B"], // lapangan yang dipakai; laga memilih lewat field `court` (1 = A, 2 = B)
+  slotMin: 25,                          // jarak antar slot laga (menit); dipakai untuk peringatan bentrok jadwal lapangan
   start: "2026-11-20",
   end: "2026-12-04",
 };
+
+/** Nama lapangan laga ("Lapangan 1"), atau "" bila belum ditentukan. */
+export const courtName = (m) => (m && Number.isInteger(m.court) ? TOURNAMENT.courts[m.court - 1] || "" : "");
 
 // Jumlah tim lolos per grup mengikuti bagan (4 grup x 2 tim = 8 tim perempat final).
 export const QUALIFY_PER_GROUP = 2;
@@ -98,7 +103,7 @@ export function timingOf(settings) {
     groupHalf: n(t.groupHalf, D.groupHalf, 1, 45),
     koHalf: n(t.koHalf, D.koHalf, 1, 45),
     finalHalf: n(t.finalHalf, 0, 1, 45),
-    etHalf: n(t.etHalf, D.etHalf, 1, 15),
+    etHalf: n(t.etHalf, D.etHalf, 0, 15),
     breakMin: n(t.breakMin, D.breakMin, 0, 20),
     etBreakMin: n(t.etBreakMin, D.etBreakMin, 0, 10),
   };
@@ -200,7 +205,9 @@ export function phaseActions(m) {
   if (m.correcting) return [{ act: "finish", label: "Selesai (FT)", kind: "dark" }];
   const p = phaseOf(m), c = cfgOf(m);
   const tied = (m.scoreA || 0) === (m.scoreB || 0);
-  const endRegular = () => (c.ko && tied
+  const endRegular = () => (c.ko && tied && !c.etHalf
+    ? [{ act: "to-pen", label: "Lanjut adu penalti", kind: "orange" }]
+    : c.ko && tied
     ? [{ act: "to-et", label: "Lanjut perpanjangan waktu", kind: "orange" }, { act: "to-pen", label: "Langsung adu penalti", kind: "ghost" }]
     : [{ act: "finish", label: "Selesai (FT)", kind: "dark" }]);
   switch (p) {
@@ -355,7 +362,7 @@ export function gkNow(m, side, players) {
 
 // ---------- Klasemen ----------
 function blank(team) {
-  return { teamId: team.id, name: team.name, group: team.group, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, fp: 0, tb: team.tbRank ?? null, ord: Number.isFinite(team.ord) ? team.ord : null, tied: false, tieId: null };
+  return { teamId: team.id, name: team.name, group: team.group, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, fp: 0, tb: team.tbRank ?? null, ord: Number.isFinite(team.ord) ? team.ord : null, tied: false, tieId: null, form: [] };
 }
 // Urutan masuk grup (field ord = waktu tim dimasukkan ke grupnya, sesuai undian). Dipakai sebagai urutan awal klasemen
 // dan sebagai penentu terakhir saat semua kriteria sama, sehingga tidak jatuh ke urutan abjad.
@@ -386,10 +393,13 @@ export function computeStandings(teams, matches, events = []) {
     byId[t.id] = r;
     (groups[t.group] ||= []).push(r);
   }
-  const done = matches.filter((m) => m.stage === "group" && m.status === "ft" && byId[m.teamA] && byId[m.teamB]);
+  const done = matches.filter((m) => m.stage === "group" && m.status === "ft" && byId[m.teamA] && byId[m.teamB]).sort(sortByKickoff);
+  const fm = (a, b) => (a > b ? "W" : a === b ? "D" : "L");
   for (const m of done) {
     applyResult(byId[m.teamA], m.scoreA || 0, m.scoreB || 0);
     applyResult(byId[m.teamB], m.scoreB || 0, m.scoreA || 0);
+    byId[m.teamA].form.push(fm(m.scoreA || 0, m.scoreB || 0));
+    byId[m.teamB].form.push(fm(m.scoreB || 0, m.scoreA || 0));
   }
   // kartu hanya dihitung dari laga grup yang sudah selesai
   const doneIds = new Set(done.map((m) => m.id));
@@ -444,6 +454,85 @@ function sortGroup(rows, doneMatches) {
     i = j;
   }
   return out;
+}
+
+// ---------- Status lolos / gugur + tampilan klasemen bergaya liga (dipakai website publik dan admin) ----------
+/**
+ * Status tiap baris klasemen satu grup (urutannya sama dengan rows):
+ *  "q"   = lolos (grup selesai dan masuk 2 teratas, atau sudah pasti dari hitungan poin)
+ *  "out" = tidak lolos (grup selesai di luar 2 teratas, atau sudah pasti tidak mungkin terkejar)
+ *  "tie" = seri penuh di batas lolos, menunggu adu penalti
+ *  "z"   = sementara di zona lolos (belum pasti)
+ *  ""    = belum pasti / belum main
+ * Hitungan pasti dibuat hati-hati: lolos pasti bila paling banyak 1 tim lain yang masih bisa menyamai poinnya
+ * (jadi aman walau kalah di penentu urutan); gugur pasti bila sudah ada 2 tim lain yang poinnya sekarang
+ * lebih tinggi dari poin maksimal tim itu.
+ */
+export function standingStatus(rows, done, qualify = QUALIFY_PER_GROUP) {
+  const n = rows.length;
+  const maxP = rows.map((r) => r.pts + 3 * Math.max(0, n - 1 - r.p));
+  return rows.map((r, i) => {
+    if (done) {
+      const edge = r.tied && rows.some((x, j) => x.tieId === r.tieId && j < qualify) && rows.some((x, j) => x.tieId === r.tieId && j >= qualify);
+      return edge ? "tie" : i < qualify ? "q" : "out";
+    }
+    if (!r.p) return "";
+    const canReach = rows.filter((x, j) => j !== i && maxP[j] >= r.pts).length;
+    if (canReach < qualify) return "q";
+    const above = rows.filter((x, j) => j !== i && x.pts > maxP[i]).length;
+    if (above >= qualify) return "out";
+    return i < qualify ? "z" : "";
+  });
+}
+/** { A: ["q","q","out","out"], ... } untuk semua grup. */
+export function allStatus(std, matches, teams) {
+  const out = {};
+  for (const g of Object.keys(std)) out[g] = standingStatus(std[g], groupDone(matches, g, teams));
+  return out;
+}
+const STATUS_CHIP = { q: "Lolos", out: "Gugur", tie: "Adu penalti" };
+export const STATUS_TEXT = { q: "Lolos ke perempat final", out: "Tidak lolos", tie: "Menunggu adu penalti", z: "Sementara di zona lolos", "": "Belum pasti" };
+const FORM_TXT = { W: "Menang", D: "Seri", L: "Kalah" };
+export function formHtml(form = []) {
+  const list = form.slice(-5);
+  return list.map((x, k) => `<i class="fm ${x.toLowerCase()}${k === list.length - 1 ? " last" : ""}" title="${FORM_TXT[x]}" aria-label="${FORM_TXT[x]}"></i>`).join("");
+}
+/** Tabel klasemen satu grup. opts.badge(teamId) mengembalikan HTML logo (boleh kosong). */
+export function standingsTableHtml(rows, status, opts = {}) {
+  if (!rows.length) return `<p class="empty">Belum ada tim di grup ini.</p>`;
+  const bd = opts.badge || (() => "");
+  const oc = opts.optClass || "opt";
+  const body = rows.map((r, i) => {
+    const st = status[i] || "";
+    const cls = st === "q" || st === "z" ? "q" : st;
+    const sg = r.gf - r.ga;
+    const chip = STATUS_CHIP[st] && opts.chips !== false ? `<span class="stchip ${st}">${STATUS_CHIP[st]}</span>` : "";
+    const form = formHtml(r.form);
+    const sub = chip || form ? `<span class="tsub">${chip}${form ? `<span class="fm-in">${form}</span>` : ""}</span>` : "";
+    return `<tr class="${cls}"><td class="rank">${i + 1}</td><td class="tm"><span class="tmrow">${bd(r.teamId)}<span class="tmn"><span class="tmname">${esc(r.name)}${r.tied ? ' <span class="tie" aria-hidden="true">*</span>' : ""}</span>${sub}</span></span></td>`
+      + `<td>${r.p}</td><td class="${oc}">${r.w}</td><td class="${oc}">${r.d}</td><td class="${oc}">${r.l}</td><td>${r.gf}</td><td class="${oc}">${r.ga}</td>`
+      + `<td class="sg ${sg > 0 ? "pos" : sg < 0 ? "neg" : ""}">${sg > 0 ? "+" : ""}${sg}</td><td class="pts">${r.pts}</td><td class="form-col">${form}</td></tr>`;
+  }).join("");
+  return `<table class="std lgt"><thead><tr><th>#</th><th class="tm">Tim</th><th>Main</th><th class="${oc}" title="Menang">M</th><th class="${oc}" title="Seri">S</th><th class="${oc}" title="Kalah">K</th><th title="Gol masuk">GM</th><th class="${oc}" title="Gol kemasukan">GK</th><th title="Selisih gol">SG</th><th class="pts-h">Poin</th><th class="fm-h">Form</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+/** Keterangan singkat satu kotak. full=true menambah lipatan "kalau poin sama" (tertutup secara bawaan). */
+export function standingLegendHtml(full = true) {
+  const q = QUALIFY_PER_GROUP;
+  return `<div class="lgd">
+    <div class="lgd-line"><span class="lgi"><i class="sq q"></i>Lolos ke perempat final (${q} teratas)</span><span class="lgi"><i class="sq out"></i>Gugur</span><span class="lgi"><i class="sq tie"></i>Adu penalti</span></div>
+    <div class="lgd-line"><span class="lgi"><i class="fm w"></i>Menang</span><span class="lgi"><i class="fm d"></i>Seri</span><span class="lgi"><i class="fm l"></i>Kalah</span><small>hasil laga terakhir, yang terbaru di kanan</small></div>
+    <p class="lgd-abbr">M menang · S seri · K kalah · GM gol masuk · GK gol kemasukan · SG selisih gol · Poin: menang 3, seri 1, kalah 0</p>
+    ${full ? `<details class="lgd-d"><summary>Kalau poin sama, urutannya bagaimana?</summary><ol class="lgd-o"><li>Gol masuk terbanyak</li><li>Hasil pertemuan antar tim yang poinnya sama</li><li>Selisih gol</li><li>Kartu paling sedikit (kuning 1, merah 3)</li><li>Masih sama: adu penalti oleh panitia</li></ol></details>` : ""}</div>`;
+}
+/** Ringkasan siapa lolos, tidak lolos, dan belum pasti dari semua grup. */
+export function qualSummaryHtml(std, stat) {
+  const cols = { q: [], out: [], wait: [] };
+  for (const g of Object.keys(std).sort()) std[g].forEach((r, i) => {
+    const st = stat[g]?.[i] || "";
+    (st === "q" ? cols.q : st === "out" ? cols.out : cols.wait).push(`<li><b>${esc(g)}${i + 1}</b><span>${esc(r.name)}</span></li>`);
+  });
+  const col = (cls, title, list, empty) => `<div class="qcol ${cls}"><h3>${title} <em>${list.length}</em></h3>${list.length ? `<ul>${list.join("")}</ul>` : `<p class="empty">${empty}</p>`}</div>`;
+  return `<div class="qsum">${col("q", "Lolos ke perempat final", cols.q, "Belum ada tim yang pasti lolos.")}${col("out", "Tidak lolos", cols.out, "Belum ada tim yang pasti gugur.")}${col("wait", "Belum pasti", cols.wait, "Semua posisi sudah pasti.")}</div>`;
 }
 
 // ---------- Statistik pemain ----------
@@ -607,7 +696,8 @@ export const ballSvg = (cls = "") => `<span class="ball ${cls}" aria-hidden="tru
 export const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-export const sortByKickoff = (a, b) => (toDate(a.kickoff)?.getTime() ?? 9e15) - (toDate(b.kickoff)?.getTime() ?? 9e15);
+// Urut jam; bila jamnya sama (dua lapangan main bersamaan), Lapangan A di atas Lapangan B.
+export const sortByKickoff = (a, b) => (toDate(a.kickoff)?.getTime() ?? 9e15) - (toDate(b.kickoff)?.getTime() ?? 9e15) || (a.court || 9) - (b.court || 9);
 
 // ---------- Babak gugur ----------
 // Pasangan perempat final mengikuti slide manajemen (4 grup, 2 lolos per grup).
