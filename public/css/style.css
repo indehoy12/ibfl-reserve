@@ -4216,3 +4216,329 @@ table.std .tmrow .tbadge:not(:has(> img)) {
   line-height: 1;
   letter-spacing: 0;
 }
+
+/* ---------- Klasemen gaya liga: label status, ikon form, keterangan, ringkasan lolos ---------- */
+.stchip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.stchip.q {
+  background: rgba(32, 128, 217, 0.14);
+  color: #14589b;
+}
+.stchip.out {
+  background: rgba(214, 33, 47, 0.12);
+  color: #a3141f;
+}
+.stchip.tie {
+  background: rgba(237, 190, 109, 0.32);
+  color: #7a5410;
+}
+i.fm {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  vertical-align: middle;
+  flex: none;
+}
+i.fm + i.fm {
+  margin-left: 4px;
+}
+i.fm.w {
+  background: #1fa65a;
+}
+i.fm.d {
+  background: #8a94a6;
+}
+i.fm.l {
+  background: #e5483f;
+}
+i.fm.w::before {
+  content: "\2713";
+}
+i.fm.d::before {
+  content: "\2013";
+}
+i.fm.l::before {
+  content: "\2715";
+}
+i.fm.last {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+i.fm.w.last {
+  outline-color: #1fa65a;
+}
+i.fm.d.last {
+  outline-color: #8a94a6;
+}
+i.fm.l.last {
+  outline-color: #e5483f;
+}
+i.fm + i.fm.last {
+  margin-left: 7px;
+}
+.lgd {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-top: 14px;
+}
+.lgd-h {
+  display: block;
+  font-size: 15px;
+  margin: 14px 0 8px;
+  color: var(--ink);
+}
+.lgd-h:first-child {
+  margin-top: 0;
+}
+.lgd-r {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ink-2);
+  padding: 3px 0;
+}
+.lgd i.sq {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex: none;
+}
+.lgd i.sq.q {
+  background: #2080d9;
+}
+.lgd i.sq.out {
+  background: #d6212f;
+}
+.lgd i.sq.tie {
+  background: #edbe6d;
+}
+.lgd-p,
+.lgd-o {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  margin: 0;
+}
+.lgd-o {
+  padding-left: 20px;
+  margin-top: 6px;
+}
+.qsum {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.qcol {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  border-top: 4px solid var(--rule);
+}
+.qcol.q {
+  border-top-color: #2080d9;
+}
+.qcol.out {
+  border-top-color: #d6212f;
+}
+.qcol.wait {
+  border-top-color: #edbe6d;
+}
+.qcol h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.qcol h3 em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+.qcol ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.qcol li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  padding: 6px 0;
+  border-top: 1px solid var(--rule);
+}
+.qcol li:first-child {
+  border-top: 0;
+}
+.qcol li b {
+  flex: none;
+  min-width: 30px;
+  text-align: center;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink-2);
+}
+.qcol .empty {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Tabel klasemen publik: garis warna di kiri baris (biru lolos, merah gugur, emas adu penalti) */
+table.std.lgt tr.q td,
+table.std.lgt tr.out td,
+table.std.lgt tr.tie td {
+  background: transparent;
+}
+table.std.lgt td.rank::before {
+  content: none;
+}
+table.std.lgt tr.q td.rank::before,
+table.std.lgt tr.out td.rank::before,
+table.std.lgt tr.tie td.rank::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  padding: 0;
+  border-radius: 0 3px 3px 0;
+}
+table.std.lgt tr.q td.rank::before {
+  background: #2080d9;
+}
+table.std.lgt tr.out td.rank::before {
+  background: #d6212f;
+}
+table.std.lgt tr.tie td.rank::before {
+  background: #edbe6d;
+}
+table.std.lgt .tmn {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  align-items: flex-start;
+}
+table.std.lgt .tmname {
+  line-height: 1.2;
+}
+table.std.lgt .tsub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+table.std.lgt .tsub .fm-in {
+  display: inline-flex;
+  align-items: center;
+}
+table.std.lgt .tsub i.fm {
+  width: 15px;
+  height: 15px;
+  font-size: 9px;
+}
+table.std.lgt th.pts-h {
+  width: 56px;
+}
+table.std.lgt th.fm-h {
+  width: 92px;
+}
+table.std.lgt td.form-col {
+  white-space: nowrap;
+}
+table.std.lgt .form-col,
+table.std.lgt th.fm-h {
+  display: none;
+}
+.sheet:has(table.lgt) {
+  container-type: inline-size;
+}
+@container (min-width: 620px) {
+  table.std.lgt .form-col,
+  table.std.lgt th.fm-h {
+    display: table-cell;
+  }
+  table.std.lgt .tsub .fm-in {
+    display: none;
+  }
+}
+@media (max-width: 479px) {
+  table.std.lgt th.pts-h {
+    width: 50px;
+  }
+}
+table.std.lgt .tmname {
+  overflow-wrap: anywhere;
+}
+table.std.lgt .tmn {
+  flex: 1 1 auto;
+}
+
+/* Keterangan klasemen versi ringkas */
+.lgd {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lgd-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.lgi {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.lgd-line small {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.lgd-abbr {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+.lgd-d {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.lgd-d summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 2px 0;
+}
+.lgd-d .lgd-o {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
