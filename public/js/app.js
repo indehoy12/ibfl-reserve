@@ -362,9 +362,14 @@ function homeView() {
   if (champOn()) { const ci = championInfo(state.matches); h += `<a class="champ-banner" href="#/juara"><small>Turnamen selesai</small><b>Juara: ${esc(tName(ci.champion))}</b><span>Lihat juara dan arsip turnamen →</span></a>`; }
   h += '<div class="home-grid"><div class="hcol">';
   if (live.length) {
-    h += `<div class="head"><h2>Sedang berlangsung</h2></div>` + live.map((m) => `<a class="livecard" href="#/laga/${esc(m.id)}">
-      <div class="top"><span>${matchLabel(m)}</span>${statusPill(m)}</div>
-      <div class="scoreline"><span class="t">${sideBadge(m, "A")}<span class="n">${esc(sideName(m, "A"))}</span></span><span class="s">${scoreText(m)}</span><span class="t r"><span class="n">${esc(sideName(m, "B"))}</span>${sideBadge(m, "B")}</span></div></a>`).join("");
+    h += `<div class="head"><h2>Sedang berlangsung</h2></div>` + live.map((m) => {
+      const evs = state.events.filter((e) => e.matchId === m.id), fd = feedHtml(m, evs, { limit: 3 });
+      return `<div class="livecard lf"><a class="lf-head" href="#/laga/${esc(m.id)}">
+        <div class="top"><span>${matchLabel(m)}</span>${statusPill(m)}</div>
+        <div class="scoreline"><span class="t">${sideBadge(m, "A")}<span class="n">${esc(sideName(m, "A"))}</span></span><span class="s">${scoreText(m)}</span><span class="t r"><span class="n">${esc(sideName(m, "B"))}</span>${sideBadge(m, "B")}</span></div></a>
+        <div class="feed lf-feed">${evs.length ? fd : `<p class="fe-empty">Belum ada kejadian. Gol dan kartu muncul di sini.</p>`}</div>
+        <a class="lf-more" href="#/laga/${esc(m.id)}">Semua kejadian dan line up</a></div>`;
+    }).join("");
   }
   h += `<div class="head"><h2>Laga berikutnya</h2><a href="#/jadwal">Semua jadwal</a></div><div class="sheet">${next.length ? next.map(matchRow).join("") : `<p class="empty">Belum ada jadwal berikutnya.</p>`}</div>`;
   h += `<div class="head"><h2>Hasil terakhir</h2></div><div class="sheet">${last.length ? last.map(resultRow).join("") : `<p class="empty">Belum ada pertandingan yang selesai.</p>`}</div>`;
@@ -690,6 +695,62 @@ function h2hCard(m) {
   return `<div class="sheet h2h"><h3 style="font-family:var(--font-d);font-size:22px;padding:12px 16px 4px">Riwayat pertemuan</h3>${inner}</div>`;
 }
 
+// ---------- Feed kejadian ala Google: kartu gol berwarna tim, kartu kuning/merah, pergantian, penanda babak ----------
+const evInH1 = (m, e) => (e.p ? e.p === "h1" : (m.cfg?.half || 0) > 0 && (e.minute ?? 0) <= (m.cfg?.half || 0));
+const feTeam = (t) => (t ? `<span class="fe-tm">${badge(t, true)}<span>${esc(t.name)}</span></span>` : "");
+function feedHtml(m, events, { limit = 0 } = {}) {
+  const asc = [...events].sort(evSort);
+  let ga = 0, gb = 0;
+  const score = new Map();
+  for (const e of asc) {
+    if (e.type === "goal" || e.type === "own_goal") { if (eventSide(m, e) === "a") ga++; else gb++; }
+    score.set(e.id, [ga, gb]);
+  }
+  const colorOf = (id) => { const t = state.teamById[id]; return t ? colorFor(t) : "#435a73"; };
+  const who = (e, note) => {
+    const p = state.playerById[e.playerId], t = state.teamById[e.teamId], no = p?.number;
+    return `<div class="fe-body"><div class="fe-who"><b>${esc(pName(e.playerId))}</b>
+      <span class="fe-sub">${t ? badge(t, true) : ""}<span>${esc(t?.name || "")}${p?.isGK ? " · Kiper" : ""}${no != null && no !== "" ? " · #" + esc(no) : ""}</span></span>${note || ""}</div>
+      <span class="fe-av" style="--tc:${colorOf(e.teamId)}">${no != null && no !== "" ? esc(no) : ""}</span></div>`;
+  };
+  const card = (e) => {
+    const min = esc(eventMinute(e)), sd = eventSide(m, e);
+    if (e.type === "goal" || e.type === "own_goal") {
+      const og = e.type === "own_goal", sc = score.get(e.id) || [0, 0];
+      const tc = colorOf(sd === "a" ? m.teamA : m.teamB);
+      const note = og ? `<span class="fe-note">Gol bunuh diri</span>` : `${e.pen ? `<span class="fe-note ok">Gol penalti</span>` : ""}${e.assistId ? `<span class="fe-note mute">Umpan gol: ${esc(pName(e.assistId))}</span>` : ""}`;
+      return `<article class="fe fe-goal" style="--tc:${tc}"><header><span class="fe-ball">${ballSvg(og ? "og" : "")}</span><b>${og ? "GOL BUNUH DIRI" : "GOOOLLL!!!"}</b><span class="fe-min">${min}</span></header>
+        <div class="fe-score"><span>${esc(sideName(m, "A"))}</span><b>${sc[0]}</b><i>–</i><b>${sc[1]}</b><span>${esc(sideName(m, "B"))}</span></div>${who(e, note)}</article>`;
+    }
+    if (e.type === "yellow" || e.type === "red") {
+      const red = e.type === "red";
+      return `<article class="fe fe-card"><header><span class="fe-chip ${red ? "rc" : "yc"}"></span><b>${red ? "KARTU MERAH" : "KARTU KUNING"}</b><span class="fe-min">${min}</span></header>${who(e, red && e.second ? `<span class="fe-note mute">Kartu kuning kedua</span>` : "")}</article>`;
+    }
+    if (e.type === "sub") {
+      const t = state.teamById[e.teamId];
+      return `<article class="fe fe-card"><header><span class="fe-swap" aria-hidden="true">⇅</span><b>PERGANTIAN</b><span class="fe-min">${min}</span></header>
+        <div class="fe-body fe-in"><div class="fe-who"><small class="in">MASUK</small><b>${esc(pName(e.playerId))}</b></div></div>
+        <div class="fe-body fe-out"><div class="fe-who"><small class="out">KELUAR</small><b>${esc(pName(e.outId))}</b><span class="fe-sub">${t ? badge(t, true) : ""}<span>${esc(t?.name || "")}</span></span></div></div></article>`;
+    }
+    return `<div class="fe-div"><span>${min} · ${esc(e.note || "Kejadian")}</span></div>`;
+  };
+  const ht = htScore(m, events);
+  const htDiv = ht ? `<div class="fe-div ht"><b>ISTIRAHAT</b><span>${esc(sideName(m, "A"))} ${ht[0]} – ${ht[1]} ${esc(sideName(m, "B"))}</span></div>` : "";
+  const out = [];
+  if (m.status === "ft") {
+    const tie = (m.scoreA ?? 0) === (m.scoreB ?? 0), pw = tie && m.penWinner ? tName(m.penWinner === "A" ? m.teamA : m.teamB) : "";
+    out.push(`<div class="fe-div ft"><b>${m.wo ? "MENANG WO" : "PERTANDINGAN SELESAI"}</b><span>${esc(sideName(m, "A"))} ${scoreText(m)} ${esc(sideName(m, "B"))}</span>${m.wo ? "<small>Lawan tidak hadir. Hasil ditetapkan panitia.</small>" : ""}${m.etPlayed ? "<small>Setelah perpanjangan waktu</small>" : ""}${pw ? `<small>Menang adu penalti: ${esc(pw)}${penScoreText(m, true) ? ` (${penScoreText(m, true)})` : ""}</small>` : ""}</div>`);
+  }
+  let placed = !ht;
+  for (const e of [...asc].reverse()) {
+    if (!placed && evInH1(m, e)) { out.push(htDiv); placed = true; }
+    out.push(card(e));
+  }
+  if (!placed) out.push(htDiv);
+  if (m.status !== "scheduled" && !m.wo) out.push(`<div class="fe-div"><b>KICK-OFF</b></div>`);
+  return (limit ? out.slice(0, limit) : out).join("");
+}
+
 /** Skor akhir babak 1 (HT) dari kejadian. Data lama tanpa cap babak dipisah lewat menit. Kosong bila belum/tidak ada babak 2. */
 function htScore(m, events) {
   const c = m.cfg || {};
@@ -731,19 +792,11 @@ function matchView(r) {
 
   let body = "";
   if (tab === "ringkasan") {
-    const sorted = [...events].sort((a, b) => evSort(b, a));
-    const rows = [];
-    if (m.status === "ft") {
-      const tie = (m.scoreA ?? 0) === (m.scoreB ?? 0), pw = tie && m.penWinner ? tName(m.penWinner === "A" ? m.teamA : m.teamB) : "";
-      rows.push(tlC(m.wo ? "WO" : "FT", `<div class="ev"><b>${m.wo ? "Menang WO" : "Pertandingan selesai"}</b>${m.wo ? "<small>Lawan tidak hadir. Hasil ditetapkan panitia.</small>" : ""}${m.etPlayed ? "<small>Setelah perpanjangan waktu</small>" : ""}${pw ? `<small>Menang adu penalti: ${esc(pw)}${penScoreText(m, true) ? ` (${penScoreText(m, true)})` : ""}</small>` : ""}</div>`));
-    }
-    sorted.forEach((e) => rows.push(tlRow(m, e)));
-    if (m.status !== "scheduled" && !m.wo) rows.push(tlC("0'", `<div class="ev"><b>Kick-off</b></div>`));
     const so = shootout(m);
     const penCard = so.any ? `<div class="sheet pen-card"><h3>Adu penalti <b>${penScoreText(m)}</b></h3>
       <div class="pen-row"><span>${esc(sideName(m, "A"))}</span><span class="pk-dots">${penDots(m, "A")}</span></div>
       <div class="pen-row"><span>${esc(sideName(m, "B"))}</span><span class="pk-dots">${penDots(m, "B")}</span></div></div>` : "";
-    body = `${penCard}<div class="sheet"><h3 style="font-family:var(--font-d);font-size:22px;padding:12px 16px 4px">Jalannya laga</h3>${rows.length ? rows.join("") : `<p class="empty">Pertandingan belum dimulai.</p>`}</div>`;
+    body = `${penCard}<div class="feed"><h3 class="feed-h">Jalannya laga</h3>${m.status === "scheduled" ? `<div class="sheet"><p class="empty">Pertandingan belum dimulai.</p></div>` : feedHtml(m, events)}</div>`;
   } else if (tab === "lineup") {
     const ready = (m.lineupA?.starters || []).length && (m.lineupB?.starters || []).length;
     body = `<div class="sheet"><div class="lu-head"><h2>Line up</h2><span class="muted small">5 pemain inti dan cadangan (maksimal 10 pemain)</span></div>

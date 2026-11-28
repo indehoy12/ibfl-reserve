@@ -3884,3 +3884,335 @@ table.std .tmrow .tbadge:not(:has(> img)) {
     height: 32px;
   }
 }
+
+/* ---------- Papan skor: latar tidak lagi terlalu zoom ----------
+   Sebelumnya foto 2500x1000 diperbesar (cover) ke kotak yang lebar dan pendek sehingga hanya sepotong bola yang terlihat.
+   Sekarang tinggi foto = tinggi papan (seluruh foto terlihat), sisi kiri/kanan memudar ke warna gelap. */
+@media (min-width: 601px), (orientation: landscape) {
+  .board {
+    background-color: #030b15;
+    background-image:
+      linear-gradient(
+        90deg,
+        #030b15 0%,
+        rgba(3, 11, 21, 0) 18%,
+        rgba(3, 11, 21, 0) 82%,
+        #030b15 100%
+      ),
+      linear-gradient(180deg, rgba(3, 11, 21, 0.5), rgba(3, 11, 21, 0.74)),
+      radial-gradient(
+        90% 100% at 0% 100%,
+        rgba(25, 105, 180, 0.55),
+        transparent 70%
+      ),
+      radial-gradient(
+        80% 100% at 100% 100%,
+        rgba(32, 128, 217, 0.45),
+        transparent 70%
+      ),
+      url(../assets/bg-hero.jpg);
+    background-size:
+      auto,
+      auto,
+      auto,
+      auto,
+      auto 100%;
+    background-position: center, center, center, center, center;
+    background-repeat: no-repeat;
+  }
+}
+
+/* ---------- Feed kejadian ala Google ---------- */
+.feed {
+  display: grid;
+  gap: 12px;
+}
+.feed-h {
+  font-family: var(--font-d);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 4px 0 2px;
+}
+.fe {
+  --tc: #0b5cab;
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.fe > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  font-family: var(--font-d);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+.fe > header b {
+  flex: 1;
+  font-weight: 700;
+}
+.fe-min {
+  font-family: var(--font-d);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.fe-goal > header {
+  background: var(--tc);
+  color: #fff;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 16px 12px;
+  text-align: center;
+  position: relative;
+  /* gelapkan sedikit supaya teks putih tetap terbaca pada warna tim yang terang */
+  background-image: linear-gradient(rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.28));
+  background-color: var(--tc);
+}
+.fe-goal > header b {
+  flex: none;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+.fe-goal .fe-min {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 18px;
+}
+.fe-ball {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: #0d2038;
+}
+.fe-ball svg {
+  width: 24px;
+  height: 24px;
+}
+.fe-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--tc);
+  background-image: linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42));
+  background-color: var(--tc);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+.fe-score span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fe-score span:first-child {
+  text-align: right;
+}
+.fe-score b {
+  font-family: var(--font-d);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.fe-score i {
+  font-style: normal;
+  opacity: 0.8;
+}
+.fe-card > header {
+  border-bottom: 1px solid var(--rule);
+}
+.fe-chip {
+  width: 20px;
+  height: 26px;
+  border-radius: 3px;
+  background: #f2c200;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+.fe-chip.rc {
+  background: #d6212f;
+}
+.fe-swap {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-2);
+}
+.fe-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+}
+.fe-who {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.fe-who > b {
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.fe-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+.fe-sub .tbadge,
+.fe-tm .tbadge {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  aspect-ratio: auto;
+  display: block;
+  position: relative;
+  font-size: 9px;
+}
+.fe-sub .tbadge:has(> img),
+.fe-tm .tbadge:has(> img) {
+  width: 26px;
+  max-width: 26px;
+  height: 22px;
+  border-radius: 0;
+}
+.fe-sub .tbadge > img,
+.fe-tm .tbadge > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: none;
+}
+.fe-note {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.fe-note.ok {
+  color: var(--win);
+}
+.fe-note.mute {
+  color: var(--ink-3);
+}
+.fe-av {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--tc);
+  background: var(--surface);
+  font-family: var(--font-d);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(13, 32, 56, 0.18);
+}
+.fe-in .fe-who small,
+.fe-out .fe-who small {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.fe-who small.in {
+  color: var(--win);
+}
+.fe-who small.out {
+  color: var(--live);
+}
+.fe-out {
+  border-top: 1px solid var(--rule);
+}
+.fe-div {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.fe-div b {
+  font-family: var(--font-d);
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.fe-div.ht,
+.fe-div.ft {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.fe-div small {
+  font-size: 13px;
+}
+.fe-empty {
+  padding: 14px 16px;
+  color: var(--ink-3);
+  font-size: 15px;
+}
+
+/* Kartu live di beranda: skor di atas, tiga kejadian terbaru di bawah */
+.lf {
+  display: block;
+  padding: 0;
+}
+.lf-head {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  padding: 14px 16px 10px;
+}
+.lf-feed {
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+.lf-feed .fe-av {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+}
+.lf-feed .fe-who > b {
+  font-size: 17px;
+}
+.lf-more {
+  display: block;
+  padding: 11px 16px;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--court-2);
+  text-decoration: none;
+}
+.lf-more:hover {
+  background: var(--surface);
+}
+@media (min-width: 760px) {
+  .feed {
+    max-width: 720px;
+  }
+}
+.fe-sub .tbadge:not(:has(> img)),
+.fe-tm .tbadge:not(:has(> img)) {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 0;
+}
