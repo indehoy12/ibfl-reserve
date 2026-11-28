@@ -10,12 +10,12 @@ import { buildXlsx, zipBlob, toCsv } from "./exporter.js";
 import { logoOf } from "./logos.js";
 import { byEntry } from "./util.js";
 import {
-  STAGES, esc, timeStr, dayShort, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
+  STAGES, esc, timeStr, dayShort, toDate, sortByKickoff, toLocalInput, fromLocalInput, elapsedSec, clockText,
   planKnockout, autoFillPlan, knockoutEligible, knockoutTeamProblems, computeBracket, unresolvedTies, finalScore, scoreFromEvents, matchReadiness, lineupIds, FUTSAL_STARTERS, LINEUP_MAX, nowMs, syncServerTime, ballSvg,
   phaseOf, isPlayPhase, stampAt, stampNow, eventMinute, minuteNow, eventCmp, livePill, ftText, isReadyToStart, phaseActions,
   timingOf, cfgFor, isKnockout, PHASE_NAME, PAUSE_REASONS, periodLimitSec, computeKeeperStats, keeperDetail, teamProgress, skeleton,
   shootout, penDots, PEN_ROUNDS, rtClockHtml, tickRtClocks, computeStandings, computePlayerStats, topBy,
-  computeSuspensions, suspendedIn, warnedIn, suspReason, onCourtIds, gkNow, eventSide, cardTotals,
+  courtName, TOURNAMENT, computeSuspensions, suspendedIn, warnedIn, suspReason, onCourtIds, gkNow, eventSide, cardTotals,
 } from "./util.js";
 
 const $app = document.getElementById("app");
@@ -310,7 +310,8 @@ function matchForm(m) {
     <div class="grid2"><div><label>Tim A</label><select name="teamA" ${dis}>${teamOptions(k.teamA, undefined, k.stage)}</select></div>
       <div><label>Tim B</label><select name="teamB" ${dis}>${teamOptions(k.teamB, undefined, k.stage)}</select></div></div>
     <div class="grid2"><div><label>Urutan bagan (QF 1–4, SF 1–2)</label><input type="number" name="slot" min="1" max="4" value="${k.slot ?? ""}" placeholder="otomatis dari jam"></div><div></div></div>
-    <label>Tanggal &amp; jam (WIB)</label><input type="datetime-local" name="kickoff" value="${toLocalInput(k.kickoff)}">
+    <div class="grid2"><div><label>Tanggal &amp; jam (WIB)</label><input type="datetime-local" name="kickoff" value="${toLocalInput(k.kickoff)}"></div>
+      <div><label>Lapangan</label><select name="court"><option value="">— belum ditentukan —</option>${TOURNAMENT.courts.map((c, i) => `<option value="${i + 1}" ${k.court === i + 1 ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div></div>
     <div class="form-actions"><button class="btn orange" type="submit">${m ? "Simpan jadwal" : "Tambah pertandingan"}</button></div>
   </form>`;
 }
@@ -319,8 +320,8 @@ function addMatchCard() {
   const tab = ui.tabs.addMatch || "manual";
   const body = tab === "paste"
     ? `<form data-form="import-matches">
-      <p class="hint">Satu laga per baris, dipisah tanda <b>|</b>:<br><code>tanggal jam | grup atau fase | matchday | tim A | tim B</code><br>
-      Contoh:<br><code>2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2</code><br><code>2026-12-04 19:30 | final | 1 | | </code><br>
+      <p class="hint">Satu laga per baris, dipisah tanda <b>|</b>:<br><code>tanggal jam | grup atau fase | matchday | tim A | tim B | lapangan (A atau B, opsional)</code><br>
+      Contoh:<br><code>2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2 | A</code><br><code>2026-12-04 19:30 | final | 1 | | </code><br>
       Fase: huruf grup (A, B, …) atau <b>qf</b>, <b>sf</b>, <b>final</b>. Nama tim harus sama dengan yang sudah dibuat; untuk fase gugur tim boleh dikosongkan dulu.<br>Bila jam belum ditentukan, tulis <b>TBD</b> di kolom tanggal: <code>TBD | final | 5 | | </code>.</p>
       <textarea name="text" placeholder="2026-11-09 19:00 | A | 1 | Tim A1 | Tim A2"></textarea>
       <div class="form-actions"><button class="btn orange" type="submit">Impor jadwal</button></div></form>`
@@ -331,6 +332,20 @@ function matchAddView() {
   return `<h1 class="page">Tambah pertandingan</h1>${addMatchCard()}`;
 }
 
+// Atur ulang jadwal massal: hujan (geser jam), lapangan tidak bisa dipakai (pindah lapangan). Hanya laga yang belum mulai.
+function rescheduleCard(sched) {
+  if (!sched.some((m) => m.kickoff)) return "";
+  const opts = (blank, clear = "") => `<option value="">${blank}</option>${TOURNAMENT.courts.map((c, i) => `<option value="${i + 1}">${esc(c)}</option>`).join("")}${clear ? `<option value="none">${clear}</option>` : ""}`;
+  return `<details class="panel fold"><summary><b>Atur ulang jadwal</b> (hujan, lapangan tidak bisa dipakai)</summary>
+    <form data-form="reschedule">
+      <p class="hint">Berlaku untuk laga yang <b>belum dimulai</b>. Geser jam dan/atau pindahkan lapangan sekaligus. Sebelum disimpan akan ada ringkasan jumlah laga yang berubah. Beri tahu penonton lewat menu Pengumuman.</p>
+      <div class="grid2"><div><label>Laga di</label><select name="scope">${opts("Semua lapangan")}</select></div>
+        <div><label>Mulai dari jam (kosongkan = semua laga belum mulai)</label><input type="datetime-local" name="from"></div></div>
+      <div class="grid2"><div><label>Geser (menit; minus = lebih awal)</label><input type="number" name="minutes" step="5" placeholder="mis. 30" inputmode="numeric"></div>
+        <div><label>Pindahkan ke</label><select name="moveTo">${opts("Tidak dipindah", "Kosongkan lapangan")}</select></div></div>
+      <div class="form-actions"><button class="btn orange" type="submit">Terapkan</button></div>
+    </form></details>`;
+}
 function matchesView() {
   const all = [...state.matches];
   const live = all.filter((m) => m.status === "live").sort(sortByKickoff);
@@ -342,7 +357,7 @@ function matchesView() {
     const flag = m.status === "scheduled" ? (miss.length ? `<span class="flag warn">Line up kurang</span>` : `<span class="flag ok">Siap dimulai</span>`) : m.status === "live" ? statusPill(m) : "";
     return `<a class="arow ${m.status === "live" ? "is-live" : ""}" href="#match/${esc(m.id)}">
       <div class="when">${m.kickoff ? dayShort(m.kickoff) : "–"}<b>${timeStr(m.kickoff)}</b></div>
-      <div class="vs"><span>${esc(sideName(m, "A"))} ${m.status === "scheduled" ? "vs" : `<em>${m.scoreA ?? 0} – ${m.scoreB ?? 0}</em>`} ${esc(sideName(m, "B"))}</span><small>${sub}</small></div>
+      <div class="vs"><span>${esc(sideName(m, "A"))} ${m.status === "scheduled" ? "vs" : `<em>${m.scoreA ?? 0} – ${m.scoreB ?? 0}</em>`} ${esc(sideName(m, "B"))}</span><small>${sub}${courtName(m) ? " · " + esc(courtName(m)) : ""}</small></div>
       <div class="rt">${flag}<span class="go">${m.status === "live" ? "Kontrol" : m.status === "ft" ? "Lihat" : "Kelola"}</span></div></a>`;
   };
   const sec = (title, list) => list.length ? `<h2 class="sect">${title} <span>${list.length}</span></h2><div class="panel list">${list.map(row).join("")}</div>` : "";
@@ -355,7 +370,7 @@ function matchesView() {
     <p class="hint">Poin, GM, head to head, selisih gol, dan kartu sama. Setelah adu penalti/undian, isi urutan akhir (1 = paling atas) lalu simpan.</p>
     ${t.rows.map((r) => `<div class="tie-row"><span>${esc(r.name)}</span><input type="number" name="tb-${esc(r.teamId)}" min="1" max="${t.rows.length}" required inputmode="numeric" aria-label="Urutan ${esc(r.name)}"></div>`).join("")}
     <div class="btns"><button class="btn orange" type="submit">Simpan urutan</button></div></form>`).join("");
-  return `<h1 class="page">Pertandingan</h1>${tieCard}${koCard}
+  return `<h1 class="page">Pertandingan</h1>${tieCard}${koCard}${rescheduleCard(sched)}
   ${sec("Sedang berlangsung", live)}${sec("Akan datang", sched)}${sec("Selesai", done)}
   ${all.length ? "" : `<div class="panel"><p class="empty">Belum ada pertandingan. Tambahkan lewat menu <a class="lnk" href="#match-add">Tambah pertandingan</a>.</p></div>`}`;
 }
@@ -745,6 +760,7 @@ function matchAdminView(id) {
   const p = phaseOf(m);
   const miss = [...matchReadiness(m, state.players), ...(m.status === "scheduled" ? suspProblems(m) : [])];
   const sub = m.stage === "group" || !m.stage ? "Grup " + esc(m.group || "?") + ", matchday " + esc(m.matchday ?? 1) : STAGES[m.stage];
+  const court = courtName(m);
   const when = m.kickoff ? dayShort(m.kickoff) + ", " + timeStr(m.kickoff) : "Waktu akan ditentukan";
 
   // papan skor + tombol jam
@@ -754,7 +770,7 @@ function matchAdminView(id) {
   if (m.status === "ft") ctrl = `<button class="btn ghost big" data-act="reopen" data-id="${esc(id)}">Buka kembali untuk koreksi</button>`;
 
   const board = `<div class="board ${m.status === "live" ? "is-live" : ""}">
-    <div class="b-meta"><span>${sub} · ${when}</span>${statusPill(m)}</div>
+    <div class="b-meta"><span>${sub} · ${when}${court ? " · " + esc(court) : ""}</span>${statusPill(m)}</div>
     <div class="b-row"><div class="b-team">${esc(sideName(m, "A"))}</div><div class="b-score">${m.scoreA ?? 0}<i>–</i>${m.scoreB ?? 0}</div><div class="b-team r">${esc(sideName(m, "B"))}</div></div>
     ${m.status === "live" ? `<div class="b-phase">${esc(PHASE_NAME[p] || "")}</div><div class="b-clock" data-clockbig="${esc(id)}">${clockText(m)}</div>` : ""}
     ${m.status === "ft" ? `<div class="b-phase">${ftText(m)}</div>` : ""}
@@ -1067,8 +1083,8 @@ function exportSheets() {
   const statusTxt = { scheduled: "Terjadwal", live: "LIVE", ft: "Selesai" };
   const klasemen = [["Grup", "Posisi", "Tim", "Main", "Menang", "Seri", "Kalah", "Gol memasukkan", "Gol kemasukan", "Selisih", "Poin", "Kuning", "Merah"]];
   Object.keys(std).sort().forEach((g) => std[g].forEach((r, i) => klasemen.push([g, i + 1, r.name, r.p, r.w, r.d, r.l, r.gf, r.ga, r.gf - r.ga, r.pts, cardsOf(r.teamId, "yellow"), cardsOf(r.teamId, "red")])));
-  const jadwal = [["Tanggal", "Jam (WIB)", "Fase", "Tim A", "Skor A", "Skor B", "Tim B", "Status", "Catatan"]];
-  ms.forEach((m) => jadwal.push([m.kickoff ? dayShort(m.kickoff) : "", m.kickoff ? timeStr(m.kickoff) : "TBD", stage(m), sideName(m, "A"), m.status === "scheduled" ? "" : m.scoreA ?? 0, m.status === "scheduled" ? "" : m.scoreB ?? 0, sideName(m, "B"), statusTxt[m.status] || m.status, m.wo ? "Menang WO" : (shootout(m).any && (m.scoreA ?? 0) === (m.scoreB ?? 0) ? "Adu penalti" : "")]));
+  const jadwal = [["Tanggal", "Jam (WIB)", "Lapangan", "Fase", "Tim A", "Skor A", "Skor B", "Tim B", "Status", "Catatan"]];
+  ms.forEach((m) => jadwal.push([m.kickoff ? dayShort(m.kickoff) : "", m.kickoff ? timeStr(m.kickoff) : "TBD", courtName(m), stage(m), sideName(m, "A"), m.status === "scheduled" ? "" : m.scoreA ?? 0, m.status === "scheduled" ? "" : m.scoreB ?? 0, sideName(m, "B"), statusTxt[m.status] || m.status, m.wo ? "Menang WO" : (shootout(m).any && (m.scoreA ?? 0) === (m.scoreB ?? 0) ? "Adu penalti" : "")]));
   const label = { goal: "Gol", own_goal: "Gol bunuh diri", yellow: "Kartu kuning", red: "Kartu merah" };
   const kejadian = [["Laga", "Menit", "Tim", "Pemain", "Kejadian", "Assist"]];
   ms.forEach((m) => ev.filter((e) => e.matchId === m.id && label[e.type]).sort(eventCmp).forEach((e) => kejadian.push([mname(m), eventMinute(e), tName(e.teamId), pName(e.playerId), e.type === "goal" && e.pen ? "Gol penalti" : label[e.type], e.assistId ? pName(e.assistId) : ""])));
@@ -1827,7 +1843,11 @@ const forms = {
       const bad = knockoutTeamProblems(stage, [teamA, teamB], state.teams, state.matches, state.events);
       if (bad.length && !(await confirmBox(`Tim berikut tidak memenuhi syarat untuk ${STAGES[stage]}:\n• ${bad.join("\n• ")}\n\nLanjutkan hanya untuk kasus darurat, misalnya tim didiskualifikasi atau mundur.`, { title: "Tim tidak berhak tampil", ok: "Ya, tetap simpan", danger: true }))) return;
     }
-    const data = { stage, group, matchday: Number(fd.get("matchday")) || 1, teamA, teamB, kickoff: fromLocalInput(fd.get("kickoff")), slot };
+    const court = Number(fd.get("court")) || null, kickoff = fromLocalInput(fd.get("kickoff"));
+    // Satu lapangan tidak bisa dipakai dua laga pada jam yang sama
+    const clash = court && kickoff ? state.matches.find((x) => x.id !== id && x.court === court && x.kickoff && Math.abs(toDate(x.kickoff) - toDate(kickoff)) < TOURNAMENT.slotMin * 60000) : null;
+    if (clash && !(await confirmBox(`${TOURNAMENT.courts[court - 1]} sudah dipakai ${sideName(clash, "A")} vs ${sideName(clash, "B")} pada ${dayShort(clash.kickoff)}, ${timeStr(clash.kickoff)} (selisih kurang dari ${TOURNAMENT.slotMin} menit).`, { title: "Jadwal lapangan bentrok", ok: "Ya, tetap simpan", danger: true }))) return;
+    const data = { stage, group, matchday: Number(fd.get("matchday")) || 1, teamA, teamB, kickoff, slot, court };
     if (old && !locked) {
       // tim diganti: line up lama milik tim sebelumnya, kosongkan
       if (teamA !== (old.teamA || null)) data.lineupA = { starters: [], subs: [] };
@@ -1842,6 +1862,28 @@ const forms = {
       f.reset();
       toast("Pertandingan ditambahkan");
     }
+  },
+  async reschedule(f) {
+    const fd = new FormData(f), scope = Number(fd.get("scope")) || 0, min = Math.round(Number(fd.get("minutes")) || 0), clear = fd.get("moveTo") === "none", to = clear ? 0 : Number(fd.get("moveTo")) || 0;
+    const from = fromLocalInput(fd.get("from"));
+    if (!min && !to && !clear) throw new Error("Isi menit geser atau pilih lapangan tujuan.");
+    const list = state.matches.filter((m) => m.status === "scheduled" && m.kickoff && (!scope || m.court === scope) && (!from || toDate(m.kickoff) >= from));
+    if (!list.length) throw new Error("Tidak ada laga terjadwal yang cocok.");
+    const first = [...list].sort(sortByKickoff)[0];
+    const what = [min ? `jam ${min > 0 ? "diundur" : "dimajukan"} ${Math.abs(min)} menit` : "", to ? `dipindah ke ${TOURNAMENT.courts[to - 1]}` : "", clear ? "lapangannya dikosongkan" : ""].filter(Boolean).join(" dan ");
+    if (!(await confirmBox(`${list.length} laga ${what}. Laga pertama yang terpengaruh: ${sideName(first, "A")} vs ${sideName(first, "B")}, ${dayShort(first.kickoff)} ${timeStr(first.kickoff)}.`, { title: "Atur ulang jadwal", ok: "Terapkan" }))) return;
+    for (let i = 0; i < list.length; i += 400) {
+      const b = writeBatch(db);
+      list.slice(i, i + 400).forEach((m) => {
+        const d = {};
+        if (min) d.kickoff = new Date(toDate(m.kickoff).getTime() + min * 60000);
+        if (to) d.court = to;
+        if (clear) d.court = null;
+        b.update(matchRef(m.id), d);
+      });
+      await b.commit();
+    }
+    toast(`${list.length} laga diperbarui`);
   },
   async "import-matches"(f) {
     const lines = String(new FormData(f).get("text")).split("\n").map((l) => l.trim()).filter(Boolean);
@@ -1860,8 +1902,11 @@ const forms = {
       const tag = (p[1] || "").trim();
       const stage = /^[A-Za-z]$/.test(tag) ? "group" : stageMap[tag.toLowerCase()];
       const A = (p[3] || "").trim(), B = (p[4] || "").trim();
+      const cv = (p[5] || "").trim().toUpperCase().replace(/^LAPANGAN\s*/, ""), n = /^[A-Z]$/.test(cv) ? cv.charCodeAt(0) - 64 : Number(cv);
+      const court = cv && n >= 1 && n <= TOURNAMENT.courts.length ? n : null;
       const ta = A ? byName[A.toLowerCase()] : null, tb = B ? byName[B.toLowerCase()] : null;
-      if (!tbd && !kickoff) problems.push(`Baris ${i + 1}: tanggal/jam tidak valid ("${dt}"). Tulis TBD bila waktu belum ditentukan.`);
+      if (cv && !court) problems.push(`Baris ${i + 1}: lapangan tidak dikenal ("${p[5].trim()}"). Tulis A atau B.`);
+      else if (!tbd && !kickoff) problems.push(`Baris ${i + 1}: tanggal/jam tidak valid ("${dt}"). Tulis TBD bila waktu belum ditentukan.`);
       else if (!stage) problems.push(`Baris ${i + 1}: grup/fase tidak dikenal ("${tag}")`);
       else if (A && !ta) problems.push(`Baris ${i + 1}: tim "${A}" tidak ditemukan`);
       else if (B && !tb) problems.push(`Baris ${i + 1}: tim "${B}" tidak ditemukan`);
@@ -1870,7 +1915,7 @@ const forms = {
       else docs.push({
         stage, group: stage === "group" ? tag.toUpperCase() : "", matchday: Number(p[2]) || 1,
         slot: stage === "qf" || stage === "sf" ? (++slotCount[stage] <= (stage === "qf" ? 4 : 2) ? slotCount[stage] : null) : null,
-        teamA: ta?.id || null, teamB: tb?.id || null, kickoff, status: "scheduled", scoreA: 0, scoreB: 0,
+        teamA: ta?.id || null, teamB: tb?.id || null, kickoff, court, status: "scheduled", scoreA: 0, scoreB: 0,
         clock: { running: false, baseSec: 0, startedAt: null }, lineupA: { starters: [], subs: [] }, lineupB: { starters: [], subs: [] }, motmId: null, createdAt: Date.now() + i,
       });
     });

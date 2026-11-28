@@ -1,7 +1,7 @@
 // Website publik Industropolis Batang Futsal League: router hash + tampilan realtime.
 import { state, startStore, onChange, isReady } from "./store.js";
 import {
-  TOURNAMENT, STAGES, esc, timeStr, dayLong, dayShort, dayKey, toDate, sortByKickoff,
+  TOURNAMENT, STAGES, courtName, esc, timeStr, dayLong, dayShort, dayKey, toDate, sortByKickoff,
   clockText, computeStandings, computePlayerStats, computeKeeperStats, keeperDetail, topBy, computeBracket, winnerSide,
   livePill, ftText, addedText, eventMinute, eventCmp,
   QUALIFY_PER_GROUP, suspendedIn, suspReason, eventSide, syncServerTime, lineupIds, ballSvg, teamProgress,
@@ -56,10 +56,12 @@ function sideName(m, side) {
 }
 const pName = (id) => state.playerById[id]?.name ?? "–";
 const stageChip = (m) => (m.stage === "group" || !m.stage ? `Grup ${esc(m.group || "?")}` : STAGES[m.stage] || esc(m.stage));
-const matchLabel = (m) =>
+const matchBase = (m) =>
   m.stage === "group" || !m.stage
     ? `Grup ${esc(m.group || "?")} · Matchday ${esc(m.matchday ?? 1)}`
     : STAGES[m.stage] || esc(m.stage);
+// Label laga + lapangan, mis. "Grup A · Matchday 1 · Lapangan 2"
+const matchLabel = (m) => matchBase(m) + (courtName(m) ? ` · ${esc(courtName(m))}` : "");
 
 // "BABAK 2 · 11'", "JEDA · Cedera", "ISTIRAHAT", "ADU PENALTI" (kuning saat jam berhenti)
 function statusPill(m) {
@@ -97,6 +99,7 @@ function route() {
 // state UI sederhana
 let homeGroup = null;
 let jadwalFilter = "all";
+let jadwalCourt = 0; // 0 = semua lapangan
 const openTeams = new Set();
 let scrolledJadwal = false;
 let lastKey = "";
@@ -297,7 +300,15 @@ const dateRange = "20 Nov – 4 Des 2026";
 let boardIdx = 0;
 function boardItems(live, next) {
   const items = live.map((m) => ({ m, kind: "live" }));
-  if (next[0]) items.push({ m: next[0], kind: "next" });
+  // Dua lapangan: tampilkan laga berikutnya di tiap lapangan yang sedang tidak dipakai laga live
+  const busy = new Set(live.map((m) => m.court || 0)), seen = new Set();
+  for (const m of next) {
+    const c = m.court || 0;
+    if (seen.has(c) || (c && busy.has(c))) continue;
+    seen.add(c);
+    items.push({ m, kind: "next" });
+  }
+  if (!items.some((i) => i.kind === "next") && next[0]) items.push({ m: next[0], kind: "next" });
   return items;
 }
 function boardView(items) {
@@ -330,7 +341,8 @@ function boardView(items) {
 function homeView() {
   const { matches, settings } = state;
   const live = matches.filter((m) => m.status === "live").sort(sortByKickoff);
-  const next = matches.filter((m) => m.status === "scheduled").sort(sortByKickoff).slice(0, 3);
+  const nextAll = matches.filter((m) => m.status === "scheduled").sort(sortByKickoff);
+  const next = nextAll.slice(0, 3);
   const last = matches.filter((m) => m.status === "ft").sort((a, b) => sortByKickoff(b, a)).slice(0, 3);
   const standings = computeStandings(state.teams, matches, state.events);
   const groups = groupsOf(standings);
@@ -338,7 +350,7 @@ function homeView() {
   const stats = computePlayerStats(state.players, state.events, state.teams, state.matches);
   const a = settings.announcement;
 
-  let h = `<div class="banner-wrap"><section class="board" aria-label="Laga utama">${boardView(boardItems(live, next))}</section>
+  let h = `<div class="banner-wrap"><section class="board" aria-label="Laga utama">${boardView(boardItems(live, nextAll))}</section>
     <div class="strip" aria-label="Informasi turnamen">
       <div><small>Tanggal</small><b>${dateRange}</b></div>
       <div><small>Lokasi</small><b>${esc(TOURNAMENT.venue)}</b></div>
@@ -387,6 +399,7 @@ function jadwalView() {
   const groups = [...new Set(all.filter((m) => m.stage === "group" || !m.stage).map((m) => m.group).filter(Boolean))].sort();
   const hasKo = all.some((m) => m.stage && m.stage !== "group");
   const filtered = all.filter((m) => {
+    if (jadwalCourt && m.court !== jadwalCourt) return false;
     if (jadwalFilter === "all") return true;
     if (jadwalFilter === "ko") return m.stage && m.stage !== "group";
     return (m.stage === "group" || !m.stage) && m.group === jadwalFilter;
@@ -394,7 +407,8 @@ function jadwalView() {
   let h = `<div class="head"><h2>Jadwal</h2></div><div class="chips">
     <button class="chip ${jadwalFilter === "all" ? "on" : ""}" data-filter="all">Semua</button>
     ${groups.map((g) => `<button class="chip ${jadwalFilter === g ? "on" : ""}" data-filter="${esc(g)}">Grup ${esc(g)}</button>`).join("")}
-    ${hasKo ? `<button class="chip ${jadwalFilter === "ko" ? "on" : ""}" data-filter="ko">Babak gugur</button>` : ""}</div>`;
+    ${hasKo ? `<button class="chip ${jadwalFilter === "ko" ? "on" : ""}" data-filter="ko">Babak gugur</button>` : ""}</div>
+    ${all.some((m) => m.court) ? `<div class="chips courts" aria-label="Pilih lapangan"><button class="chip ${jadwalCourt === 0 ? "on" : ""}" data-court="0">Semua lapangan</button>${TOURNAMENT.courts.map((c, i) => `<button class="chip ${jadwalCourt === i + 1 ? "on" : ""}" data-court="${i + 1}">${esc(c)}</button>`).join("")}</div>` : ""}`;
   if (!filtered.length) return h + `<div class="sheet"><p class="empty">Belum ada jadwal.</p></div>`;
   const byDay = new Map();
   for (const m of filtered) {
@@ -857,7 +871,9 @@ document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-group]");
   if (g) { homeGroup = g.dataset.group; lastHtml = ""; render(); return; }
   const f = e.target.closest("[data-filter]");
-  if (f) { jadwalFilter = f.dataset.filter; lastHtml = ""; scrolledJadwal = true; render(); }
+  if (f) { jadwalFilter = f.dataset.filter; lastHtml = ""; scrolledJadwal = true; render(); return; }
+  const c = e.target.closest("[data-court]");
+  if (c) { jadwalCourt = Number(c.dataset.court) || 0; lastHtml = ""; scrolledJadwal = true; render(); }
 });
 document.addEventListener("toggle", (e) => {
   const d = e.target;

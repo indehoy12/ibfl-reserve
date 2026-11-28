@@ -9,9 +9,14 @@ export const TOURNAMENT = {
   short: "IBFL 2026",
   tagline: "Khusus karyawan tenant Industropolis Batang",
   venue: "Sagara Futsal Arena, KEK Industropolis Batang",
+  courts: ["Lapangan A", "Lapangan B"], // lapangan yang dipakai; laga memilih lewat field `court` (1 = A, 2 = B)
+  slotMin: 25,                          // jarak antar slot laga (menit); dipakai untuk peringatan bentrok jadwal lapangan
   start: "2026-11-20",
   end: "2026-12-04",
 };
+
+/** Nama lapangan laga ("Lapangan 1"), atau "" bila belum ditentukan. */
+export const courtName = (m) => (m && Number.isInteger(m.court) ? TOURNAMENT.courts[m.court - 1] || "" : "");
 
 // Jumlah tim lolos per grup mengikuti bagan (4 grup x 2 tim = 8 tim perempat final).
 export const QUALIFY_PER_GROUP = 2;
@@ -607,7 +612,8 @@ export const ballSvg = (cls = "") => `<span class="ball ${cls}" aria-hidden="tru
 export const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-export const sortByKickoff = (a, b) => (toDate(a.kickoff)?.getTime() ?? 9e15) - (toDate(b.kickoff)?.getTime() ?? 9e15);
+// Urut jam; bila jamnya sama (dua lapangan main bersamaan), Lapangan A di atas Lapangan B.
+export const sortByKickoff = (a, b) => (toDate(a.kickoff)?.getTime() ?? 9e15) - (toDate(b.kickoff)?.getTime() ?? 9e15) || (a.court || 9) - (b.court || 9);
 
 // ---------- Babak gugur ----------
 // Pasangan perempat final mengikuti slide manajemen (4 grup, 2 lolos per grup).
