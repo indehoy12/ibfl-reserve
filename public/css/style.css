@@ -4451,3 +4451,36 @@ table.std.lgt .tmn {
   margin: 6px 0 0;
   padding-left: 20px;
 }
+
+/* ---------- Jarak logo, nama tim, label status, dan tombol (supaya tidak menempel) ---------- */
+.board-score {
+  gap: 20px;
+  margin: 20px 0 10px;
+}
+.board-team {
+  gap: 16px;
+}
+.board-foot {
+  margin-top: 24px;
+  gap: 14px 28px;
+}
+.scorebox {
+  padding-top: 20px;
+}
+.scorebox .meta {
+  gap: 14px;
+  align-items: flex-start;
+}
+.scorebox .meta .pill {
+  margin-top: 2px;
+}
+.scorebox .teams {
+  gap: 16px;
+  margin: 22px 0 12px;
+}
+.scorebox .tm {
+  gap: 14px;
+}
+.scorebox .clockbig {
+  margin-top: 6px;
+}
