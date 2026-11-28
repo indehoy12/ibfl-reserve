@@ -766,7 +766,7 @@ function phaseNote(m) {
   if (p === "pen") return "Adu penalti: pilih pemenang di bawah. Gol adu penalti tidak dicatat sebagai gol.";
   if (m.pause) return `Jam berhenti (${m.pause.label}) dan tampil di layar penonton. Tekan Lanjutkan jam saat laga bermain lagi.`;
   const tieKo = isKnockout(m) && (m.scoreA ?? 0) === (m.scoreB ?? 0) && (p === "h2");
-  return "Jam berjalan otomatis dan menit kejadian terisi sendiri. Di akhir babak jam tidak berhenti paksa (tampil +1', +2'); tekan tombol Akhiri saat wasit meniup peluit." + (tieKo ? " Skor seri di babak gugur: pilih perpanjangan waktu atau langsung adu penalti." : "");
+  return "Jam berjalan otomatis dan menit kejadian terisi sendiri. Di akhir babak jam tidak berhenti paksa (tampil +1', +2'); tekan tombol Akhiri saat wasit meniup peluit." + (tieKo ? ((m.cfg || cfgFor(m)).etHalf ? " Skor seri di babak gugur: pilih perpanjangan waktu atau langsung adu penalti." : " Skor seri di babak gugur: lanjut ke adu penalti.") : "");
 }
 
 function matchAdminView(id) {
@@ -1050,7 +1050,8 @@ function timingView() {
     <p class="hint">Bila 1 babak non-stop, isi durasi totalnya (mis. 20). Contoh bawaan: 2 × 10 menit.</p>
     <div class="grid2">${num("koHalf", "Babak gugur (QF dan SF): menit per babak", t.koHalf, 1, 45)}<div><label for="tm-finalHalf">Final: menit per babak</label><input id="tm-finalHalf" type="number" name="finalHalf" min="1" max="45" step="1" value="${t.finalHalf || ""}" placeholder="sama dengan babak gugur" inputmode="numeric"></div></div>
     <p class="hint">Kosongkan durasi Final kalau sama dengan QF dan SF.</p>
-    <div class="grid2">${num("etHalf", "Perpanjangan waktu: menit per babak", t.etHalf, 1, 15)}<div></div></div>
+    <div class="grid2">${num("etHalf", "Perpanjangan waktu: menit per babak", t.etHalf, 0, 15)}<div></div></div>
+    <p class="hint">Isi 0 untuk meniadakan perpanjangan waktu: laga QF dan SF yang seri langsung adu penalti.</p>
     <div class="grid2">${num("breakMin", "Istirahat antar babak (menit)", t.breakMin, 0, 20)}${num("etBreakMin", "Istirahat ET1 ke ET2 (menit)", t.etBreakMin, 0, 10)}</div>
     <p class="hint">Sebagai patokan, aturan futsal FIFA: 2 × 20 menit. Durasi di sini mengikuti keputusan panitia.</p>
     <div class="form-actions"><button class="btn orange" type="submit">Simpan durasi</button></div></form></div>`;
@@ -2131,7 +2132,7 @@ const forms = {
       groupHalves: Number(fd.get("groupHalves")) === 1 ? 1 : 2,
       groupHalf: num("groupHalf", 1, 45, "Grup: menit per babak"), koHalf: num("koHalf", 1, 45, "Babak gugur: menit per babak"),
       finalHalf: String(fd.get("finalHalf") ?? "").trim() === "" ? 0 : num("finalHalf", 1, 45, "Final: menit per babak"),
-      etHalf: num("etHalf", 1, 15, "Perpanjangan waktu: menit per babak"), breakMin: num("breakMin", 0, 20, "Istirahat"), etBreakMin: num("etBreakMin", 0, 10, "Istirahat ET"),
+      etHalf: num("etHalf", 0, 15, "Perpanjangan waktu: menit per babak"), breakMin: num("breakMin", 0, 20, "Istirahat"), etBreakMin: num("etBreakMin", 0, 10, "Istirahat ET"),
     };
     await setDoc(doc(db, "settings", "main"), { timing }, { merge: true });
   },

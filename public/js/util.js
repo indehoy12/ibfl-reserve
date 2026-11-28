@@ -103,7 +103,7 @@ export function timingOf(settings) {
     groupHalf: n(t.groupHalf, D.groupHalf, 1, 45),
     koHalf: n(t.koHalf, D.koHalf, 1, 45),
     finalHalf: n(t.finalHalf, 0, 1, 45),
-    etHalf: n(t.etHalf, D.etHalf, 1, 15),
+    etHalf: n(t.etHalf, D.etHalf, 0, 15),
     breakMin: n(t.breakMin, D.breakMin, 0, 20),
     etBreakMin: n(t.etBreakMin, D.etBreakMin, 0, 10),
   };
@@ -205,7 +205,9 @@ export function phaseActions(m) {
   if (m.correcting) return [{ act: "finish", label: "Selesai (FT)", kind: "dark" }];
   const p = phaseOf(m), c = cfgOf(m);
   const tied = (m.scoreA || 0) === (m.scoreB || 0);
-  const endRegular = () => (c.ko && tied
+  const endRegular = () => (c.ko && tied && !c.etHalf
+    ? [{ act: "to-pen", label: "Lanjut adu penalti", kind: "orange" }]
+    : c.ko && tied
     ? [{ act: "to-et", label: "Lanjut perpanjangan waktu", kind: "orange" }, { act: "to-pen", label: "Langsung adu penalti", kind: "ghost" }]
     : [{ act: "finish", label: "Selesai (FT)", kind: "dark" }]);
   switch (p) {
@@ -504,7 +506,7 @@ export function standingsTableHtml(rows, status, opts = {}) {
     const st = status[i] || "";
     const cls = st === "q" || st === "z" ? "q" : st;
     const sg = r.gf - r.ga;
-    const chip = STATUS_CHIP[st] ? `<span class="stchip ${st}">${STATUS_CHIP[st]}</span>` : "";
+    const chip = STATUS_CHIP[st] && opts.chips !== false ? `<span class="stchip ${st}">${STATUS_CHIP[st]}</span>` : "";
     const form = formHtml(r.form);
     const sub = chip || form ? `<span class="tsub">${chip}${form ? `<span class="fm-in">${form}</span>` : ""}</span>` : "";
     return `<tr class="${cls}"><td class="rank">${i + 1}</td><td class="tm"><span class="tmrow">${bd(r.teamId)}<span class="tmn"><span class="tmname">${esc(r.name)}${r.tied ? ' <span class="tie" aria-hidden="true">*</span>' : ""}</span>${sub}</span></span></td>`

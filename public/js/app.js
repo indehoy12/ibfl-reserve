@@ -6,7 +6,7 @@ import {
   livePill, ftText, addedText, eventMinute, eventCmp,
   QUALIFY_PER_GROUP, suspendedIn, suspReason, eventSide, syncServerTime, lineupIds, ballSvg, teamProgress,
   skeleton, shootout, penScoreText, penDots, tickRtClocks,
-  groupDone as groupDoneU, standingStatus, allStatus, standingsTableHtml, standingLegendHtml, qualSummaryHtml,
+  groupDone as groupDoneU, standingStatus, timingOf, allStatus, standingsTableHtml, standingLegendHtml, qualSummaryHtml,
 } from "./util.js";
 import { teamSummary, playerProfile, headToHead, championInfo } from "./profile.js";
 import { logoOf } from "./logos.js";
@@ -121,6 +121,7 @@ const groupDone = (g) => groupDoneU(state.matches, g, state.teams);
 // Klasemen gaya liga: garis warna di kiri (biru lolos, merah gugur, emas menunggu adu penalti), label status, dan ikon form.
 function standingsTable(rows, qualify, done = false) {
   return standingsTableHtml(rows, standingStatus(rows, done, qualify), {
+    chips: false,
     badge: (id) => { const t = state.teamById[id]; return logoOf(t) ? badge(t, true) : ""; },
   });
 }
@@ -436,7 +437,7 @@ function klasemenView() {
   if (!gs.length) return `<div class="head"><h2>Klasemen</h2></div><div class="sheet"><p class="empty">Klasemen tampil setelah tim dan grup dibuat.</p></div>`;
   return `<div class="head"><h2>Klasemen</h2></div><div class="groups-grid">` +
     gs.map((g) => `<div class="sheet"><div class="gtitle">Grup ${esc(g)}</div>${standingsTable(standings[g], QUALIFY_PER_GROUP, groupDone(g))}</div>`).join("") +
-    `</div><div class="head sub"><h2>Siapa yang lolos</h2></div>${qualSummaryHtml(standings, allStatus(standings, state.matches, state.teams))}${standingNote()}`;
+    `</div>${standingNote()}`;
 }
 
 // ---------- Bagan ----------
@@ -478,7 +479,7 @@ function baganView() {
     <section class="round r-sf" aria-label="Semifinal"><h3>Semifinal</h3><div class="rc">${b.sf.map((s) => bracketCard(s)).join("")}</div></section>
     <section class="round r-fn" aria-label="Final"><h3>Final</h3><div class="rc">${bracketCard(b.final, "final")}</div></section>
   </div>
-  <p class="note">Pasangan terisi otomatis setelah semua laga grup selesai. Kalau seri di babak gugur, lanjut perpanjangan waktu atau adu penalti sesuai keputusan panitia.</p>${footer}`;
+  <p class="note">Pasangan terisi otomatis setelah semua laga grup selesai. Kalau seri di babak gugur, ${timingOf(state.settings).etHalf ? "lanjut perpanjangan waktu atau adu penalti sesuai keputusan panitia." : "langsung adu penalti."}</p>${footer}`;
 }
 
 // ---------- Statistik ----------
