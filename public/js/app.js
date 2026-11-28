@@ -505,15 +505,15 @@ function keeperAward(gk) {
 }
 function statistikView() {
   const stats = computePlayerStats(state.players, state.events, state.teams, state.matches);
-  const keepers = computeKeeperStats(state.players, state.matches, state.teams, state.events).slice(0, 10);
+  const keepers = computeKeeperStats(state.players, state.matches, state.teams, state.events);
   const gk = state.playerById[state.settings.bestGkId];
-  const carded = stats.filter((p) => p.yellow + p.red > 0).sort((a, b) => b.red - a.red || b.yellow - a.yellow).slice(0, 8);
+  const carded = stats.filter((p) => p.yellow + p.red > 0).sort((a, b) => b.red - a.red || b.yellow - a.yellow);
   return `<div class="head"><h2>Statistik pemain</h2></div><div class="stats-grid">
   ${gk ? keeperAward(gk) : `<div class="sheet gkaward idle"><span class="gk-tag">Kiper terbaik</span><p class="muted">Belum ditentukan. Dipilih panitia di akhir turnamen; peringkat kiper ada di bawah.</p></div>`}
-  <div class="sheet"><h3>Top scorer</h3>${playerRows(topBy(stats, "goals"), "goals", "gol")}</div>
-  <div class="sheet"><h3>Top assist</h3>${playerRows(topBy(stats, "assists"), "assists", "assist")}</div>
-  <div class="sheet"><h3>Peringkat kiper</h3>${keepers.length ? `<table class="tbl-sm"><thead><tr><th>Kiper</th><th>Main</th><th>CS</th><th>KB</th><th>Rata²</th></tr></thead><tbody>${keepers.map((k) => `<tr><td><b>${esc(k.name)}</b><br><span class="muted small">${esc(tName(k.teamId))} · <span class="${k.progress.out ? "gk-out" : ""}">${esc(k.progress.label)}</span></span></td><td>${k.played}</td><td><b>${k.cleanSheets}</b></td><td>${k.conceded}</td><td>${k.avg.toFixed(1)}</td></tr>`).join("")}</tbody></table><p class="note" style="padding:8px 16px 12px">CS = tidak kebobolan (lawan 0 gol). KB = jumlah gol kemasukan. Perpanjangan waktu dihitung, adu penalti tidak.</p>` : `<p class="empty">Belum ada data. Dihitung dari laga selesai.</p>`}</div>
-  <div class="sheet"><h3>Kartu</h3>${carded.length ? carded.map((p, i) => `<div class="prow"><span class="n">${i + 1}</span><span class="who"><b>${esc(p.name)}</b><span>${esc(tName(p.teamId))}</span></span><span class="v" style="font-size:18px">${p.yellow ? `<span class="ico yc"></span>${p.yellow}` : ""} ${p.red ? `<span class="ico rc"></span>${p.red}` : ""}</span></div>`).join("") : `<p class="empty">Belum ada kartu.</p>`}</div>
+  <div class="sheet"><h3>Top scorer</h3><div class="scrollbox">${playerRows(topBy(stats, "goals", Infinity), "goals", "gol")}</div></div>
+  <div class="sheet"><h3>Top assist</h3><div class="scrollbox">${playerRows(topBy(stats, "assists", Infinity), "assists", "assist")}</div></div>
+  <div class="sheet"><h3>Peringkat kiper</h3>${keepers.length ? `<div class="scrollbox"><table class="tbl-sm"><thead><tr><th>Kiper</th><th>Main</th><th>CS</th><th>KB</th><th>Rata²</th></tr></thead><tbody>${keepers.map((k) => `<tr><td><b>${esc(k.name)}</b><br><span class="muted small">${esc(tName(k.teamId))} · <span class="${k.progress.out ? "gk-out" : ""}">${esc(k.progress.label)}</span></span></td><td>${k.played}</td><td><b>${k.cleanSheets}</b></td><td>${k.conceded}</td><td>${k.avg.toFixed(1)}</td></tr>`).join("")}</tbody></table></div><p class="note" style="padding:8px 16px 12px">CS = tidak kebobolan (lawan 0 gol). KB = jumlah gol kemasukan. Perpanjangan waktu dihitung, adu penalti tidak.</p>` : `<p class="empty">Belum ada data. Dihitung dari laga selesai.</p>`}</div>
+  <div class="sheet"><h3>Kartu</h3>${carded.length ? `<div class="scrollbox">${carded.map((p, i) => `<div class="prow"><span class="n">${i + 1}</span><span class="who"><b>${esc(p.name)}</b><span>${esc(tName(p.teamId))}</span></span><span class="v" style="font-size:18px">${p.yellow ? `<span class="ico yc"></span>${p.yellow}` : ""} ${p.red ? `<span class="ico rc"></span>${p.red}` : ""}</span></div>`).join("")}</div>` : `<p class="empty">Belum ada kartu.</p>`}</div>
   </div>${footer}`;
 }
 

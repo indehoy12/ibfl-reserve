@@ -4503,3 +4503,61 @@ table.std.lgt .tmn {
 .scorebox .clockbig {
   margin-top: 6px;
 }
+
+/* ---------- Daftar statistik panjang: bisa digulir, scrollbar transparan (muncul tipis saat disentuh kursor) ---------- */
+.scrollbox {
+  max-height: 560px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbox:hover,
+.scrollbox:focus-within {
+  scrollbar-color: rgba(13, 32, 56, 0.28) transparent;
+}
+.scrollbox::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbox::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbox::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.scrollbox:hover::-webkit-scrollbar-thumb,
+.scrollbox:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(13, 32, 56, 0.28);
+}
+
+/* Responsif untuk daftar statistik: tinggi mengikuti tinggi layar, tabel kiper bisa digeser di layar sempit */
+.scrollbox {
+  max-height: 420px;
+  max-height: clamp(300px, 58dvh, 560px);
+  -webkit-overflow-scrolling: touch;
+}
+.scrollbox .prow .who {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.scrollbox .tbl-sm {
+  min-width: 340px;
+}
+@media (min-width: 760px) {
+  .scrollbox {
+    max-height: 520px;
+    max-height: clamp(360px, 62dvh, 600px);
+  }
+}
+@media (min-width: 1200px) {
+  .scrollbox {
+    max-height: 600px;
+    max-height: clamp(420px, 68dvh, 680px);
+  }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .scrollbox {
+    max-height: 70dvh;
+  }
+}
