@@ -4561,3 +4561,81 @@ table.std.lgt .tmn {
     max-height: 70dvh;
   }
 }
+
+/* Logo tim di daftar statistik */
+.who-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+}
+.who-cell > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.who-cell .tbadge {
+  flex: none;
+}
+
+/* Baris statistik gaya tabel liga: nomor urut, nomor punggung (pengganti foto), nama + logo tim kecil, nilai */
+.prow-h {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 16px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule);
+}
+.prow.pl {
+  grid-template-columns: 28px 44px minmax(0, 1fr) auto;
+  gap: 12px;
+}
+.prow.pl .n {
+  text-align: center;
+}
+.jno {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--rule);
+  font-family: var(--font-d);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  flex: none;
+}
+.prow.pl .who {
+  min-width: 0;
+}
+.tmline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.tmline em {
+  font-style: normal;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tmline .tbadge.sm {
+  width: 18px;
+  height: 18px;
+  font-size: 8px;
+  flex: none;
+}
+.who-cell .jno {
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+}
+.prow.pl .v {
+  font-size: 26px;
+}

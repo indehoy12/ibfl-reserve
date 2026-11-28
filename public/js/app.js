@@ -485,10 +485,15 @@ function baganView() {
 }
 
 // ---------- Statistik ----------
+// Peringkat dengan nilai sama berbagi nomor (1, 1, 1, 4, ...). Foto pemain diganti nomor punggung; di bawah nama ada logo kecil + nama tim.
+const rankOf = (list, i, val) => { let r = i; while (r > 0 && val(list[r - 1]) === val(list[i])) r--; return r + 1; };
+const jersey = (p) => `<span class="jno">${p.number != null && p.number !== "" ? esc(p.number) : "–"}</span>`;
+const teamLine = (teamId, extra = "") => `<span class="tmline">${badge(state.teamById[teamId], true)}<em>${esc(tName(teamId))}${extra}</em></span>`;
 function playerRows(list, key, unit) {
   if (!list.length) return `<p class="empty">Belum ada data.</p>`;
-  return list.map((p, i) => `<div class="prow"><span class="n">${i + 1}</span>
-    <span class="who"><b><a class="plink" href="#/pemain/${esc(p.id)}">${esc(p.name)}</a></b><span>${esc(tName(p.teamId))}</span></span><span class="v">${p[key]}${unit ? ` <small>${unit}</small>` : ""}</span></div>`).join("");
+  return `<div class="prow-h"><span>Pemain</span><span>${esc(unit.charAt(0).toUpperCase() + unit.slice(1))}</span></div><div class="scrollbox">`
+    + list.map((p, i) => `<div class="prow pl"><span class="n">${rankOf(list, i, (x) => x[key])}</span>${jersey(p)}<span class="who"><b><a class="plink" href="#/pemain/${esc(p.id)}">${esc(p.name)}</a></b>${teamLine(p.teamId)}</span><span class="v">${p[key]}</span></div>`).join("")
+    + `</div>`;
 }
 function keeperAward(gk) {
   const d = keeperDetail(gk.id, state.players, state.matches, state.teams, state.events);
@@ -510,10 +515,10 @@ function statistikView() {
   const carded = stats.filter((p) => p.yellow + p.red > 0).sort((a, b) => b.red - a.red || b.yellow - a.yellow);
   return `<div class="head"><h2>Statistik pemain</h2></div><div class="stats-grid">
   ${gk ? keeperAward(gk) : `<div class="sheet gkaward idle"><span class="gk-tag">Kiper terbaik</span><p class="muted">Belum ditentukan. Dipilih panitia di akhir turnamen; peringkat kiper ada di bawah.</p></div>`}
-  <div class="sheet"><h3>Top scorer</h3><div class="scrollbox">${playerRows(topBy(stats, "goals", Infinity), "goals", "gol")}</div></div>
-  <div class="sheet"><h3>Top assist</h3><div class="scrollbox">${playerRows(topBy(stats, "assists", Infinity), "assists", "assist")}</div></div>
-  <div class="sheet"><h3>Peringkat kiper</h3>${keepers.length ? `<div class="scrollbox"><table class="tbl-sm"><thead><tr><th>Kiper</th><th>Main</th><th>CS</th><th>KB</th><th>Rata²</th></tr></thead><tbody>${keepers.map((k) => `<tr><td><b>${esc(k.name)}</b><br><span class="muted small">${esc(tName(k.teamId))} · <span class="${k.progress.out ? "gk-out" : ""}">${esc(k.progress.label)}</span></span></td><td>${k.played}</td><td><b>${k.cleanSheets}</b></td><td>${k.conceded}</td><td>${k.avg.toFixed(1)}</td></tr>`).join("")}</tbody></table></div><p class="note" style="padding:8px 16px 12px">CS = tidak kebobolan (lawan 0 gol). KB = jumlah gol kemasukan. Perpanjangan waktu dihitung, adu penalti tidak.</p>` : `<p class="empty">Belum ada data. Dihitung dari laga selesai.</p>`}</div>
-  <div class="sheet"><h3>Kartu</h3>${carded.length ? `<div class="scrollbox">${carded.map((p, i) => `<div class="prow"><span class="n">${i + 1}</span><span class="who"><b>${esc(p.name)}</b><span>${esc(tName(p.teamId))}</span></span><span class="v" style="font-size:18px">${p.yellow ? `<span class="ico yc"></span>${p.yellow}` : ""} ${p.red ? `<span class="ico rc"></span>${p.red}` : ""}</span></div>`).join("")}</div>` : `<p class="empty">Belum ada kartu.</p>`}</div>
+  <div class="sheet"><h3>Top scorer</h3>${playerRows(topBy(stats, "goals", Infinity), "goals", "gol")}</div>
+  <div class="sheet"><h3>Top assist</h3>${playerRows(topBy(stats, "assists", Infinity), "assists", "assist")}</div>
+  <div class="sheet"><h3>Peringkat kiper</h3>${keepers.length ? `<div class="scrollbox"><table class="tbl-sm"><thead><tr><th>Kiper</th><th>Main</th><th>CS</th><th>KB</th><th>Rata²</th></tr></thead><tbody>${keepers.map((k) => `<tr><td><div class="who-cell">${jersey(k)}<div><b>${esc(k.name)}</b>${teamLine(k.teamId, ` · <span class="${k.progress.out ? "gk-out" : ""}">${esc(k.progress.label)}</span>`)}</div></div></td><td>${k.played}</td><td><b>${k.cleanSheets}</b></td><td>${k.conceded}</td><td>${k.avg.toFixed(1)}</td></tr>`).join("")}</tbody></table></div><p class="note" style="padding:8px 16px 12px">CS = tidak kebobolan (lawan 0 gol). KB = jumlah gol kemasukan. Perpanjangan waktu dihitung, adu penalti tidak.</p>` : `<p class="empty">Belum ada data. Dihitung dari laga selesai.</p>`}</div>
+  <div class="sheet"><h3>Kartu</h3>${carded.length ? `<div class="prow-h"><span>Pemain</span><span>Kartu</span></div><div class="scrollbox">${carded.map((p, i) => `<div class="prow pl"><span class="n">${rankOf(carded, i, (x) => x.red + "-" + x.yellow)}</span>${jersey(p)}<span class="who"><b><a class="plink" href="#/pemain/${esc(p.id)}">${esc(p.name)}</a></b>${teamLine(p.teamId)}</span><span class="v" style="font-size:18px">${p.yellow ? `<span class="ico yc"></span>${p.yellow}` : ""} ${p.red ? `<span class="ico rc"></span>${p.red}` : ""}</span></div>`).join("")}</div>` : `<p class="empty">Belum ada kartu.</p>`}</div>
   </div>${footer}`;
 }
 
